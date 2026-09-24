@@ -2,6 +2,7 @@ import {
   useMemo,
   useState,
   type ChangeEvent,
+  type DragEvent,
   type FormEvent,
 } from "react";
 import {

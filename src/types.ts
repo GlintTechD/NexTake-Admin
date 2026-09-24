@@ -51,3 +51,15 @@ export interface SystemMetric {
   technicalDetail: string;
   progressPercent: number;
 }
+export interface DailyTip {
+  id: string;
+  title: string;
+  content: string;
+  category: string;
+  image: string;
+  author: string;
+  status: "published" | "draft";
+  published_at?: string | null;
+  created_at?: string;
+  updated_at?: string;
+}

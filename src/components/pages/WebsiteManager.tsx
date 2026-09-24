@@ -17,15 +17,22 @@ import {
   ArrowRight,
   Send,
 } from "lucide-react";
-import type { WebsiteConfig, Article } from "../../types";
+
+import type { WebsiteConfig, Article, DailyTip } from "../../types";
 import NexTakeLogo from "../NexTakeLogo";
 
 interface WebsiteManagerProps {
   config: WebsiteConfig;
   onUpdateConfig: (newConfig: WebsiteConfig) => void;
   onOpenLiveSite: () => void;
+
   articles: Article[];
   onUpdateArticle: (article: Article) => void;
+
+  dailyTips: DailyTip[];
+  onCreateDailyTip: (tip: DailyTip) => void;
+  onUpdateDailyTip: (tip: DailyTip) => void;
+  onDeleteDailyTip: (id: string) => void;
 }
 
 export default function WebsiteManager({
@@ -34,6 +41,10 @@ export default function WebsiteManager({
   onOpenLiveSite,
   articles,
   onUpdateArticle,
+  dailyTips,
+  onCreateDailyTip,
+  onUpdateDailyTip,
+  onDeleteDailyTip,
 }: WebsiteManagerProps) {
   const [form, setForm] = useState<WebsiteConfig>(config);
   const [configPublishMessage, setConfigPublishMessage] = useState<string | null>(null);
@@ -63,6 +74,26 @@ export default function WebsiteManager({
     image: "",
   });
   const [postSaveSuccessMessage, setPostSaveSuccessMessage] = useState<string | null>(null);
+  
+  // Daily Tips Modal State
+const [isDailyTipModalOpen, setIsDailyTipModalOpen] = useState(false);
+const [editingDailyTip, setEditingDailyTip] = useState<DailyTip | null>(null);
+
+const [dailyTipForm, setDailyTipForm] = useState<{
+  title: string;
+  content: string;
+  category: string;
+  image: string;
+  author: string;
+  status: "draft" | "published";
+}>({
+  title: "",
+  content: "",
+  category: "Finance",
+  image: "",
+  author: "",
+  status: "draft",
+});
 
   const showConfigPublishMessage = (message: string) => {
     setConfigPublishMessage(message);
@@ -161,6 +192,86 @@ export default function WebsiteManager({
       setPostSaveSuccessMessage(null);
     }, 4000);
   };
+  // ============================================================
+// DAILY TIPS HANDLERS
+// ============================================================
+
+const handleCreateNewDailyTip = () => {
+  setEditingDailyTip(null);
+
+  setDailyTipForm({
+    title: "",
+    content: "",
+    category: "Finance",
+    image: "",
+    author: "",
+    status: "draft",
+  });
+
+  setIsDailyTipModalOpen(true);
+};
+
+const handleOpenEditDailyTip = (tip: DailyTip) => {
+  setEditingDailyTip(tip);
+
+  setDailyTipForm({
+    title: tip.title,
+    content: tip.content,
+    category: tip.category,
+    image: tip.image || "",
+    author: tip.author || "",
+    status: tip.status,
+  });
+
+  setIsDailyTipModalOpen(true);
+};
+
+const handleCloseDailyTipModal = () => {
+  setIsDailyTipModalOpen(false);
+  setEditingDailyTip(null);
+};
+
+const handleSaveDailyTip = (e: React.FormEvent) => {
+  e.preventDefault();
+
+  const title = dailyTipForm.title.trim();
+  const content = dailyTipForm.content.trim();
+
+  if (!title || !content) {
+    return;
+  }
+
+  if (editingDailyTip) {
+    onUpdateDailyTip({
+      ...editingDailyTip,
+      title,
+      content,
+      category: dailyTipForm.category.trim(),
+      image: dailyTipForm.image.trim(),
+      author: dailyTipForm.author.trim(),
+      status: dailyTipForm.status,
+      updated_at: new Date().toISOString(),
+    });
+  } else {
+    onCreateDailyTip({
+      id: crypto.randomUUID(),
+      title,
+      content,
+      category: dailyTipForm.category.trim(),
+      image: dailyTipForm.image.trim(),
+      author: dailyTipForm.author.trim(),
+      status: dailyTipForm.status,
+      published_at:
+        dailyTipForm.status === "published"
+          ? new Date().toISOString()
+          : null,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    });
+  }
+
+  handleCloseDailyTipModal();
+};
 
   // Filter articles in the "Website Blog Posts" box
   const filteredArticles = useMemo(() => {
@@ -389,6 +500,164 @@ export default function WebsiteManager({
             </div>
           )}
         </div>
+              {/* ========================================================================= */}
+      {/* DAILY TIPS MANAGEMENT                                                     */}
+      {/* ========================================================================= */}
+      <section
+        id="daily-tips-management"
+        className="rounded-2xl bg-white border-2 border-[#071A2B]/15 p-6 sm:p-8 shadow-sm space-y-6"
+      >
+        {/* Header */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-5 border-b border-[#071A2B]/10">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-[#071A2B] text-[#7FFFD4] flex items-center justify-center">
+                <Sparkles className="w-4 h-4" />
+              </div>
+
+              <h2 className="text-lg sm:text-xl font-black text-[#071A2B] tracking-tight">
+                Daily Tips
+              </h2>
+
+              <span className="text-[11px] font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-[#7FFFD4] text-[#071A2B] shadow-xs">
+                {dailyTips.length} Tips
+              </span>
+            </div>
+
+            <p className="text-xs text-slate-500">
+              Create short-form tips and publish them directly to the public website.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleCreateNewDailyTip}
+            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#071A2B] text-white hover:bg-[#0f2c45] text-xs font-bold transition-all shadow-sm cursor-pointer"
+          >
+            <Plus className="w-4 h-4 text-[#7FFFD4]" />
+            <span>New Daily Tip</span>
+          </button>
+        </div>
+
+        {/* Daily Tips Grid */}
+        {dailyTips.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+            {dailyTips.map((tip) => (
+              <div
+                key={tip.id}
+                className="group relative flex flex-col rounded-xl border border-[#071A2B]/15 bg-white hover:border-[#071A2B] hover:shadow-md transition-all overflow-hidden"
+              >
+                {/* Image */}
+                <div className="relative aspect-[16/9] w-full bg-slate-100 overflow-hidden">
+                  {tip.image ? (
+                    <img
+                      src={tip.image}
+                      alt={tip.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-[#071A2B]/5">
+                      <Sparkles className="w-8 h-8 text-[#071A2B]/30" />
+                    </div>
+                  )}
+
+                  {/* Category */}
+                  <span className="absolute top-2 left-2 text-[10px] font-extrabold px-2 py-0.5 rounded bg-[#7FFFD4] text-[#071A2B] shadow-xs">
+                    {tip.category || "Daily Tip"}
+                  </span>
+
+                  {/* Status */}
+                  <span
+                    className={`absolute top-2 right-2 text-[10px] font-bold px-2 py-0.5 rounded shadow-xs ${
+                      tip.status === "published"
+                        ? "bg-[#071A2B] text-[#7FFFD4]"
+                        : "bg-amber-100 text-amber-900 border border-amber-300"
+                    }`}
+                  >
+                    {tip.status === "published" ? "LIVE" : "DRAFT"}
+                  </span>
+                </div>
+
+                {/* Content */}
+                <div className="flex flex-col flex-1 p-4">
+                  <h3 className="text-sm font-bold text-[#071A2B] leading-snug line-clamp-2">
+                    {tip.title}
+                  </h3>
+
+                  <p className="mt-2 text-xs text-slate-500 leading-relaxed line-clamp-3">
+                    {tip.content}
+                  </p>
+
+                  {/* Footer */}
+                  <div className="mt-auto pt-4 flex items-center justify-between border-t border-slate-100 mt-4">
+                    <div className="min-w-0">
+                      <p className="text-[10px] uppercase tracking-wider text-slate-400 font-bold">
+                        Author
+                      </p>
+
+                      <p className="text-xs font-semibold text-[#071A2B] truncate max-w-[120px]">
+                        {tip.author || "Admin"}
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => handleOpenEditDailyTip(tip)}
+                        className="p-2 rounded-lg text-slate-500 hover:text-[#071A2B] hover:bg-slate-100 transition-colors cursor-pointer"
+                        title="Edit Daily Tip"
+                      >
+                        <Edit3 className="w-3.5 h-3.5" />
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const confirmed = window.confirm(
+                            `Delete "${tip.title}"?`
+                          );
+
+                          if (confirmed) {
+                            onDeleteDailyTip(tip.id);
+                          }
+                        }}
+                        className="p-2 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                        title="Delete Daily Tip"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          /* Empty State */
+          <div className="py-14 text-center border border-dashed border-slate-200 rounded-xl">
+            <div className="w-12 h-12 mx-auto rounded-xl bg-[#7FFFD4]/20 text-[#071A2B] flex items-center justify-center">
+              <Sparkles className="w-6 h-6" />
+            </div>
+
+            <h3 className="mt-4 text-sm font-bold text-[#071A2B]">
+              No Daily Tips Yet
+            </h3>
+
+            <p className="mt-1 text-xs text-slate-500 max-w-sm mx-auto">
+              Create your first Daily Tip and publish it to the public website.
+            </p>
+
+            <button
+              type="button"
+              onClick={handleCreateNewDailyTip}
+              className="mt-5 inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#071A2B] text-white text-xs font-bold hover:bg-[#0f2c45] transition-all cursor-pointer"
+            >
+              <Plus className="w-4 h-4 text-[#7FFFD4]" />
+              Create First Tip
+            </button>
+          </div>
+        )}
+      </section>
       </section>
 
       {/* Main Tabs: Editor Config vs Live Simulator */}
@@ -1071,7 +1340,248 @@ export default function WebsiteManager({
           </div>
         </div>
       )}
+            {/* ========================================================================= */}
+      {/* MODAL: CREATE / EDIT DAILY TIP                                             */}
+      {/* ========================================================================= */}
+      {isDailyTipModalOpen && (
+        <div
+          id="daily-tip-modal"
+          className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs overflow-y-auto"
+        >
+          <div className="bg-white rounded-2xl border border-[#071A2B]/20 w-full max-w-2xl p-6 sm:p-8 shadow-2xl space-y-6 my-8 animate-scale-in">
+            
+            {/* Modal Header */}
+            <div className="flex items-center justify-between pb-4 border-b border-[#071A2B]/10">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-[#071A2B] text-[#7FFFD4] flex items-center justify-center shadow-xs">
+                  <Sparkles className="w-5 h-5" />
+                </div>
 
+                <div>
+                  <h2 className="text-lg sm:text-xl font-black text-[#071A2B] tracking-tight">
+                    {editingDailyTip
+                      ? "Edit Daily Tip"
+                      : "Create Daily Tip"}
+                  </h2>
+
+                  <p className="text-xs text-slate-500">
+                    {editingDailyTip
+                      ? "Update the Daily Tip displayed on the public website."
+                      : "Create a new tip for the public website."}
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleCloseDailyTipModal}
+                className="p-2 text-slate-400 hover:text-[#071A2B] rounded-xl hover:bg-slate-100 transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Form */}
+            <form
+              onSubmit={handleSaveDailyTip}
+              className="space-y-5"
+            >
+              {/* Title */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold uppercase tracking-wider text-slate-600 block">
+                  Tip Title
+                </label>
+
+                <input
+                  type="text"
+                  value={dailyTipForm.title}
+                  onChange={(e) =>
+                    setDailyTipForm({
+                      ...dailyTipForm,
+                      title: e.target.value,
+                    })
+                  }
+                  placeholder="e.g. Start tracking your spending today"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-[#071A2B]/20 text-[#071A2B] text-sm font-bold focus:outline-none focus:border-[#071A2B] focus:ring-2 focus:ring-[#7FFFD4]/40"
+                  required
+                />
+              </div>
+
+              {/* Category + Status */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold uppercase tracking-wider text-slate-600 block">
+                    Category
+                  </label>
+
+                  <select
+                    value={dailyTipForm.category}
+                    onChange={(e) =>
+                      setDailyTipForm({
+                        ...dailyTipForm,
+                        category: e.target.value,
+                      })
+                    }
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-[#071A2B]/20 text-[#071A2B] text-sm font-semibold focus:outline-none focus:border-[#071A2B]"
+                  >
+                    <option value="Finance">Finance</option>
+                    <option value="Technology">Technology</option>
+                    <option value="Productivity">Productivity</option>
+                    <option value="Business">Business</option>
+                    <option value="Career">Career</option>
+                    <option value="Security">Security</option>
+                    <option value="Lifestyle">Lifestyle</option>
+                  </select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold uppercase tracking-wider text-slate-600 block">
+                    Publishing Status
+                  </label>
+
+                  <select
+                    value={dailyTipForm.status}
+                    onChange={(e) =>
+                      setDailyTipForm({
+                        ...dailyTipForm,
+                        status: e.target.value as
+                          | "draft"
+                          | "published",
+                      })
+                    }
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-[#071A2B]/20 text-[#071A2B] text-sm font-semibold focus:outline-none focus:border-[#071A2B]"
+                  >
+                    <option value="draft">
+                      Draft — Hidden from Website
+                    </option>
+
+                    <option value="published">
+                      Published — Visible on Website
+                    </option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Author + Image */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold uppercase tracking-wider text-slate-600 block">
+                    Author
+                  </label>
+
+                  <input
+                    type="text"
+                    value={dailyTipForm.author}
+                    onChange={(e) =>
+                      setDailyTipForm({
+                        ...dailyTipForm,
+                        author: e.target.value,
+                      })
+                    }
+                    placeholder="e.g. NexTake Editorial"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-[#071A2B]/20 text-[#071A2B] text-sm font-semibold focus:outline-none focus:border-[#071A2B]"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold uppercase tracking-wider text-slate-600 block">
+                    Image URL
+                  </label>
+
+                  <input
+                    type="url"
+                    value={dailyTipForm.image}
+                    onChange={(e) =>
+                      setDailyTipForm({
+                        ...dailyTipForm,
+                        image: e.target.value,
+                      })
+                    }
+                    placeholder="https://..."
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-[#071A2B]/20 text-[#071A2B] text-xs font-mono focus:outline-none focus:border-[#071A2B]"
+                  />
+                </div>
+              </div>
+
+              {/* Content */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold uppercase tracking-wider text-slate-600 block">
+                    Tip Content
+                  </label>
+
+                  <span className="text-[10px] text-slate-400">
+                    Short-form content
+                  </span>
+                </div>
+
+                <textarea
+                  rows={7}
+                  value={dailyTipForm.content}
+                  onChange={(e) =>
+                    setDailyTipForm({
+                      ...dailyTipForm,
+                      content: e.target.value,
+                    })
+                  }
+                  placeholder="Write your daily tip here..."
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-[#071A2B]/20 text-[#071A2B] text-sm leading-relaxed focus:outline-none focus:border-[#071A2B] focus:ring-2 focus:ring-[#7FFFD4]/40 resize-y"
+                  required
+                />
+              </div>
+
+              {/* Preview */}
+              {(dailyTipForm.title || dailyTipForm.content) && (
+                <div className="rounded-xl border border-[#7FFFD4]/50 bg-[#7FFFD4]/10 p-4">
+                  <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#071A2B]/60 mb-2">
+                    Preview
+                  </p>
+
+                  <h3 className="text-sm font-bold text-[#071A2B]">
+                    {dailyTipForm.title || "Untitled Daily Tip"}
+                  </h3>
+
+                  <p className="mt-1 text-xs leading-relaxed text-slate-600">
+                    {dailyTipForm.content || "Your tip content will appear here."}
+                  </p>
+                </div>
+              )}
+
+              {/* Actions */}
+              <div className="flex flex-col-reverse sm:flex-row items-center justify-end gap-3 pt-4 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={handleCloseDailyTipModal}
+                  className="w-full sm:w-auto px-4 py-2.5 rounded-xl border border-[#071A2B]/20 text-xs font-semibold text-[#071A2B] hover:bg-slate-50 transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="submit"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-[#7FFFD4] text-[#071A2B] hover:bg-[#68f0c5] text-xs font-extrabold shadow-md shadow-[#7FFFD4]/25 transition-all cursor-pointer active:scale-95"
+                >
+                  {dailyTipForm.status === "published" ? (
+                    <Send className="w-3.5 h-3.5" />
+                  ) : (
+                    <Save className="w-3.5 h-3.5" />
+                  )}
+
+                  <span>
+                    {editingDailyTip
+                      ? "Save Changes"
+                      : dailyTipForm.status === "published"
+                        ? "Publish Daily Tip"
+                        : "Save Draft"}
+                  </span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
