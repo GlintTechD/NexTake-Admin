@@ -40,12 +40,13 @@ export default function BlogManager({
     category: "Software Engineering",
     excerpt: "",
     content: "",
-    author: "Promise Akanni",
+    author: "NexTake Editorial",
     status: "published" as 'published' | 'draft' | 'scheduled',
     readTime: "5 min read",
     image: "https://images.unsplash.com/photo-1547658719-da2b51169166?w=800&h=500&fit=crop",
     avatar: "https://i.pravatar.cc/64?img=60",
     isNew: true,
+    isBigStory: false,
   });
 
   const categories = useMemo(() => {
@@ -80,6 +81,7 @@ export default function BlogManager({
       image: article.image,
       avatar: article.avatar,
       isNew: !!article.isNew,
+      isBigStory: !!article.isBigStory,
     });
   };
 
@@ -91,12 +93,13 @@ export default function BlogManager({
       category: "Software Engineering",
       excerpt: "",
       content: "",
-      author: "Promise Akanni",
+      author: "NexTake Editorial",
       status: "published",
       readTime: "5 min read",
       image: "https://images.unsplash.com/photo-1547658719-da2b51169166?w=800&h=500&fit=crop",
       avatar: "https://i.pravatar.cc/64?img=60",
       isNew: true,
+      isBigStory: false,
     });
   };
 
@@ -412,6 +415,21 @@ export default function BlogManager({
                   className="w-full px-3.5 py-2.5 rounded-xl border border-[#071A2B]/20 text-[#071A2B] text-xs font-mono focus:outline-none focus:border-[#071A2B] focus:ring-2 focus:ring-[#7FFFD4]/30"
                 />
               </div>
+
+              <label className="flex items-start gap-3 rounded-xl border border-[#071A2B]/15 bg-slate-50 px-3.5 py-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={formData.isBigStory}
+                  onChange={(e) => setFormData({ ...formData, isBigStory: e.target.checked })}
+                  className="mt-0.5 h-4 w-4 accent-[#071A2B]"
+                />
+                <span>
+                  <span className="block text-xs font-bold text-[#071A2B]">Set as The Big Story</span>
+                  <span className="block text-[11px] text-slate-500 mt-0.5">
+                    This published article will lead the public homepage. Selecting it replaces the current Big Story.
+                  </span>
+                </span>
+              </label>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1">

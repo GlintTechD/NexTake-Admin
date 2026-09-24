@@ -149,6 +149,8 @@ export default function WebsiteManager({
     return ['all', ...unique];
   }, [articles]);
 
+  const bigStoryArticle = articles.find((article) => article.status === 'published') ?? null;
+
   return (
     <div className="space-y-8 animate-fade-in text-[#071A2B]">
       
@@ -222,6 +224,49 @@ export default function WebsiteManager({
           </button>
         </div>
       )}
+
+      <section
+        id="big-story-editor"
+        className="rounded-2xl bg-[#071A2B] text-white p-6 sm:p-8 shadow-sm space-y-5"
+      >
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2 text-[#7FFFD4] text-xs font-bold uppercase tracking-wider">
+              <Sparkles className="w-4 h-4" />
+              Public homepage feature
+            </div>
+            <h2 className="mt-2 text-xl sm:text-2xl font-black">The Big Story</h2>
+            <p className="mt-1 text-xs text-slate-300">
+              Edit the published article currently shown in the Big Story section.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => bigStoryArticle && handleOpenEditPost(bigStoryArticle)}
+            disabled={!bigStoryArticle}
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#7FFFD4] px-4 py-2.5 text-sm font-bold text-[#071A2B] transition hover:bg-[#68f0c5] disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <Edit3 className="w-4 h-4" />
+            Edit Big Story
+          </button>
+        </div>
+
+        {bigStoryArticle ? (
+          <div className="border-t border-white/15 pt-4">
+            <div className="flex flex-wrap items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-[#7FFFD4]">
+              <span>{bigStoryArticle.category}</span>
+              <span className="text-slate-500">/</span>
+              <span>Live on homepage</span>
+            </div>
+            <h3 className="mt-2 max-w-3xl text-lg font-bold text-white">{bigStoryArticle.title}</h3>
+            <p className="mt-1 max-w-3xl text-sm leading-relaxed text-slate-300 line-clamp-2">{bigStoryArticle.excerpt}</p>
+          </div>
+        ) : (
+          <p className="border-t border-white/15 pt-4 text-sm text-slate-300">
+            Publish an article first to create the homepage Big Story.
+          </p>
+        )}
+      </section>
 
       {/* ========================================================================= */}
       {/* FEATURE REQUEST: PLACE TO CHECK ALL BLOGS POSTED ON MAIN WEBSITE          */}

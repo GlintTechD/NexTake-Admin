@@ -49,7 +49,7 @@ export default function LoggedOutView({ onLogin }: LoggedOutViewProps) {
               <input
                 type="email"
                 readOnly
-                value="akannipromise1@gmail.com"
+                value="Administrator email is configured securely"
                 className="w-full px-3.5 py-2.5 rounded-xl border border-[#071A2B]/20 bg-slate-50 text-sm font-semibold text-[#071A2B]"
               />
             </div>

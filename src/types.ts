@@ -13,7 +13,12 @@ export interface Article {
   readTime: string;
   avatar: string;
   image: string;
+  slug?: string;
+  keywords?: string[];
+  publishedAt?: string;
+  updatedAt?: string;
   isNew?: boolean;
+  isBigStory?: boolean;
 }
 
 export interface WebsiteConfig {

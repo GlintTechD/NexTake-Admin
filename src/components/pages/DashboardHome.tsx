@@ -48,7 +48,7 @@ export default function DashboardHome({
               <span className="w-1.5 h-1.5 rounded-full bg-[#7FFFD4] animate-ping" />
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
-              Welcome back, <span className="text-[#7FFFD4]">Promise</span>
+              Welcome back to <span className="text-[#7FFFD4]">NexTake</span>
             </h1>
             <p className="text-sm text-slate-300 leading-relaxed">
               Your website and technical blog are running smoothly. You have <strong className="text-white font-semibold">{draftCount} pending drafts</strong> and <strong className="text-white font-semibold">{publishedCount} live articles</strong> reaching over {totalViews.toLocaleString()} readers.

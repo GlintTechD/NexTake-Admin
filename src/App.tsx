@@ -1,16 +1,16 @@
 import { useEffect, useState } from "react";
-import { supabase } from "./lib/supabase";
+import { isSupabaseConfigured, supabase } from "./lib/supabase";
 
 import type {
   NavPageId,
   Article,
   WebsiteConfig,
   ActivityItem,
-  SystemMetric,
 } from "./types";
 
 import {
   INITIAL_WEBSITE_CONFIG,
+  INITIAL_ARTICLES,
   INITIAL_ACTIVITIES,
   SYSTEM_METRICS,
 } from "./data/initialData";
@@ -22,12 +22,16 @@ import DashboardHome from "./components/pages/DashboardHome";
 import WebsiteManager from "./components/pages/WebsiteManager";
 import BlogManager from "./components/pages/BlogManager";
 import LogoutModal from "./components/LogoutModal";
-import LoggedOutView from "./components/LoggedOutView";
+import AuthView from "./components/AuthView";
 import LiveWebsiteModal from "./components/LiveWebsiteModal";
+import { createSlug, extractKeywords } from "./lib/keywords";
+
+const INACTIVITY_TIMEOUT_MS = 20 * 60 * 1000;
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState<NavPageId>("home");
-  const [isLoggedIn, setIsLoggedIn] = useState(true);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isCheckingSession, setIsCheckingSession] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Modals state
@@ -36,7 +40,7 @@ export default function App() {
   const [isNewArticleModalOpen, setIsNewArticleModalOpen] = useState(false);
 
   // App core state
-  const [articles, setArticles] = useState<Article[]>([]);
+  const [articles, setArticles] = useState<Article[]>(INITIAL_ARTICLES);
   const [isLoadingArticles, setIsLoadingArticles] = useState(true);
 
   const [websiteConfig, setWebsiteConfig] =
@@ -45,11 +49,67 @@ export default function App() {
   const [activities, setActivities] =
     useState<ActivityItem[]>(INITIAL_ACTIVITIES);
 
-  const [metrics, setMetrics] =
-    useState<SystemMetric[]>(SYSTEM_METRICS);
+  const metrics = SYSTEM_METRICS;
+
+  useEffect(() => {
+    const checkSession = async () => {
+      try {
+        const response = await fetch("/api/admin/me", { credentials: "same-origin" });
+        setIsLoggedIn(response.ok);
+      } catch {
+        setIsLoggedIn(false);
+      } finally {
+        setIsCheckingSession(false);
+      }
+    };
+
+    void checkSession();
+  }, []);
+
+  useEffect(() => {
+    if (!isLoggedIn) return;
+
+    let inactivityTimer: number;
+    let lastHeartbeat = 0;
+
+    const logoutForInactivity = async () => {
+      await fetch("/api/auth/logout", {
+        method: "POST",
+        credentials: "same-origin",
+      });
+      setIsLoggedIn(false);
+    };
+
+    const resetInactivityTimer = () => {
+      window.clearTimeout(inactivityTimer);
+      inactivityTimer = window.setTimeout(() => {
+        void logoutForInactivity();
+      }, INACTIVITY_TIMEOUT_MS);
+
+      if (Date.now() - lastHeartbeat >= 60_000) {
+        lastHeartbeat = Date.now();
+        void fetch("/api/admin/me", { credentials: "same-origin" }).then((response) => {
+          if (!response.ok) setIsLoggedIn(false);
+        });
+      }
+    };
+
+    const activityEvents = ["click", "keydown", "pointermove", "scroll", "touchstart"];
+    activityEvents.forEach((eventName) => window.addEventListener(eventName, resetInactivityTimer));
+    resetInactivityTimer();
+
+    return () => {
+      window.clearTimeout(inactivityTimer);
+      activityEvents.forEach((eventName) => window.removeEventListener(eventName, resetInactivityTimer));
+    };
+  }, [isLoggedIn]);
 
   // Load articles from Supabase
   useEffect(() => {
+    if (!isLoggedIn || !isSupabaseConfigured) {
+      return;
+    }
+
     const loadArticles = async () => {
       setIsLoadingArticles(true);
 
@@ -77,7 +137,12 @@ export default function App() {
         readTime: article.read_time,
         avatar: article.avatar,
         image: article.image,
+        slug: article.slug,
+        keywords: article.keywords ?? [],
+        publishedAt: article.published_at,
+        updatedAt: article.updated_at,
         isNew: article.is_new,
+        isBigStory: article.is_big_story,
       }));
 
       setArticles(formattedArticles);
@@ -85,7 +150,7 @@ export default function App() {
     };
 
     loadArticles();
-  }, []);
+  }, [isLoggedIn]);
 
   const handleNavigate = (page: NavPageId) => {
     if (page === "logout") {
@@ -97,7 +162,11 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const handleConfirmLogout = () => {
+  const handleConfirmLogout = async () => {
+    await fetch("/api/auth/logout", {
+      method: "POST",
+      credentials: "same-origin",
+    });
     setIsLogoutModalOpen(false);
     setIsLoggedIn(false);
   };
@@ -111,6 +180,13 @@ export default function App() {
  const handleAddArticle = async (
   newArticleData: Omit<Article, "id">
 ) => {
+  if (newArticleData.isBigStory) {
+    await supabase
+      .from("articles")
+      .update({ is_big_story: false })
+      .eq("is_big_story", true);
+  }
+
   const { data, error } = await supabase
     .from("articles")
     .insert({
@@ -125,7 +201,14 @@ export default function App() {
       read_time: newArticleData.readTime,
       avatar: newArticleData.avatar,
       image: newArticleData.image,
+      slug: newArticleData.slug || createSlug(newArticleData.title),
+      keywords: newArticleData.keywords?.length
+        ? newArticleData.keywords
+        : extractKeywords(newArticleData.title, newArticleData.content, newArticleData.category),
+      published_at: newArticleData.status === "published" ? new Date().toISOString() : null,
+      updated_at: new Date().toISOString(),
       is_new: newArticleData.isNew,
+      is_big_story: newArticleData.isBigStory,
     })
     .select()
     .single();
@@ -148,7 +231,12 @@ export default function App() {
     readTime: data.read_time,
     avatar: data.avatar,
     image: data.image,
+    slug: data.slug,
+    keywords: data.keywords ?? [],
+    publishedAt: data.published_at,
+    updatedAt: data.updated_at,
     isNew: data.is_new,
+    isBigStory: data.is_big_story,
   };
 
   setArticles((prev) => [newArticle, ...prev]);
@@ -156,6 +244,14 @@ export default function App() {
 
   // Update Article
  const handleUpdateArticle = async (updatedArticle: Article) => {
+  if (updatedArticle.isBigStory) {
+    await supabase
+      .from("articles")
+      .update({ is_big_story: false })
+      .neq("id", updatedArticle.id)
+      .eq("is_big_story", true);
+  }
+
   const { error } = await supabase
     .from("articles")
     .update({
@@ -170,7 +266,16 @@ export default function App() {
       read_time: updatedArticle.readTime,
       avatar: updatedArticle.avatar,
       image: updatedArticle.image,
+      slug: updatedArticle.slug || createSlug(updatedArticle.title),
+      keywords: updatedArticle.keywords?.length
+        ? updatedArticle.keywords
+        : extractKeywords(updatedArticle.title, updatedArticle.content, updatedArticle.category),
+      published_at: updatedArticle.status === "published"
+        ? updatedArticle.publishedAt || new Date().toISOString()
+        : null,
+      updated_at: new Date().toISOString(),
       is_new: updatedArticle.isNew,
+      is_big_story: updatedArticle.isBigStory,
     })
     .eq("id", updatedArticle.id);
 
@@ -212,7 +317,7 @@ export default function App() {
       action: "Removed article",
       target: target.title,
       timestamp: "Just now",
-      user: "Promise Akanni",
+      user: "NexTake Admin",
       type: "system",
     };
 
@@ -231,15 +336,19 @@ export default function App() {
       action: "Updated website layout",
       target: `Hero & Navigation for ${newConfig.siteName}`,
       timestamp: "Just now",
-      user: "Promise Akanni",
+      user: "NexTake Admin",
       type: "edit",
     };
 
     setActivities((prev) => [newActivity, ...prev]);
   };
 
+  if (isCheckingSession) {
+    return <div className="min-h-screen flex items-center justify-center text-sm text-slate-500">Checking session...</div>;
+  }
+
   if (!isLoggedIn) {
-    return <LoggedOutView onLogin={handleLogin} />;
+    return <AuthView onAuthenticated={handleLogin} />;
   }
 
   return (
