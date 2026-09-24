@@ -127,6 +127,11 @@ export default function BlogManager({
     });
   }, [articles, searchTerm, selectedCategory, selectedStatus]);
 
+  const publishedBigStoryCandidates = useMemo(
+    () => articles.filter((article) => article.status === "published"),
+    [articles]
+  );
+
   const handleOpenEdit = (article: Article) => {
     setEditingArticle(article);
     setCoverImageError("");
@@ -142,6 +147,7 @@ export default function BlogManager({
       image: article.image,
       avatar: article.avatar,
       isNew: !!article.isNew,
+      isBigStory: !!article.isBigStory,
     });
   };
 
@@ -301,6 +307,60 @@ export default function BlogManager({
         </button>
       </div>
 
+      <section
+        id="admin-big-story-section"
+        className="space-y-4 rounded-2xl border border-amber-200 bg-amber-50/60 p-5 sm:p-6"
+      >
+        <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-amber-700">
+              Editorial rotation
+            </p>
+            <h2 className="text-xl font-extrabold tracking-tight text-[#071A2B]">
+              The Big Story
+            </h2>
+            <p className="text-xs text-slate-600">
+              Every published article is eligible for the public 24-hour rotation.
+              Preferred stories are marked below.
+            </p>
+          </div>
+          <span className="text-xs font-semibold text-amber-800">
+            {publishedBigStoryCandidates.length} published candidates
+          </span>
+        </div>
+
+        {publishedBigStoryCandidates.length > 0 ? (
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
+            {publishedBigStoryCandidates.slice(0, 6).map((article) => (
+              <button
+                key={article.id}
+                type="button"
+                onClick={() => handleOpenEdit(article)}
+                className="flex items-center gap-3 rounded-xl border border-amber-200 bg-white p-3 text-left transition-colors hover:border-amber-400 hover:bg-amber-50"
+              >
+                <img
+                  src={article.image}
+                  alt=""
+                  className="h-12 w-16 shrink-0 rounded-lg object-cover"
+                />
+                <span className="min-w-0">
+                  <span className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wide text-amber-700">
+                    {article.isBigStory ? "Preferred" : "Eligible"}
+                  </span>
+                  <span className="mt-1 block truncate text-sm font-bold text-[#071A2B]">
+                    {article.title}
+                  </span>
+                </span>
+              </button>
+            ))}
+          </div>
+        ) : (
+          <p className="rounded-xl border border-dashed border-amber-300 bg-white/70 p-4 text-xs text-slate-600">
+            Publish an article to make it eligible for The Big Story rotation.
+          </p>
+        )}
+      </section>
+
       {/* Filter and Search Bar */}
       <div className="flex flex-col gap-4 justify-between md:flex-row md:items-center">
         {/* Search */}
@@ -379,6 +439,11 @@ export default function BlogManager({
                   {article.isNew && (
                     <span className="rounded bg-[#071A2B] px-1.5 py-0.5 text-[10px] font-extrabold tracking-wide text-[#7FFFD4]">
                       NEW
+                    </span>
+                  )}
+                  {article.isBigStory && (
+                    <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-extrabold tracking-wide text-amber-800">
+                      BIG STORY
                     </span>
                   )}
                 </div>
@@ -554,6 +619,22 @@ export default function BlogManager({
                     <option value="draft">Draft (Private)</option>
                   </select>
                 </div>
+
+                <label className="flex items-center gap-2 rounded-xl border border-[#7FFFD4]/50 bg-[#7FFFD4]/10 px-3.5 py-2.5 text-xs font-semibold text-[#071A2B] sm:mt-6">
+                  <input
+                    type="checkbox"
+                    checked={!!formData.isBigStory}
+                    disabled={formData.status !== "published"}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        isBigStory: e.target.checked,
+                      })
+                    }
+                    className="h-4 w-4 accent-[#071A2B]"
+                  />
+                  <span>Use as The Big Story</span>
+                </label>
               </div>
 
               <div className="space-y-1">

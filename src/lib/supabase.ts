@@ -1,4 +1,4 @@
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { INITIAL_ARTICLES } from "../data/initialData";
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -30,6 +30,7 @@ export interface ArticleRow {
   image: string;
   is_new?: boolean;
   created_at: string;
+  hero_priority?: number | null;
 }
 
 export interface ArticleInsert {
@@ -119,9 +120,7 @@ export interface QueryBuilder {
   ): Promise<TResult1 | TResult2>;
 }
 
-export interface NexTakeSupabaseClient {
-  from(table: string): QueryBuilder;
-}
+export type NexTakeSupabaseClient = SupabaseClient;
 
 /* -------------------------------------------------------------------------- */
 /*                              LOCAL STORAGE                                 */
@@ -532,11 +531,11 @@ function createLocalRecord(
 /*                            SUPABASE CLIENT                                 */
 /* -------------------------------------------------------------------------- */
 
-const mockClient: NexTakeSupabaseClient = {
-  from(table) {
+const mockClient = {
+  from(table: string) {
     return createMockQueryBuilder(table);
   },
-};
+} as unknown as NexTakeSupabaseClient;
 
 export const supabase: NexTakeSupabaseClient = isConfigured
   ? (createClient(

@@ -8,13 +8,114 @@ export interface Article {
   content: string;
   author: string;
   date: string;
-  status: 'published' | 'draft' | 'scheduled';
+  status: PublishStatus;
   views: number;
   readTime: string;
   avatar: string;
   image: string;
   isNew?: boolean;
+
+  slug?: string;
+  sourceUrl?: string;
+  sourceName?: string;
+  sourceLogoUrl?: string | null;
+  originalAuthor?: string | null;
+  originalPublishedAt?: string | null;
+  linkBehavior?: LinkBehavior;
+  summary?: string;
+  keyTakeaways?: string[];
+  tags?: string[];
+  coverImageUrl?: string;
+  imageCredit?: string | null;
+  canonicalUrl?: string;
+  syndicationLicense?: SyndicationLicense | null;
+  syndicatedBody?: string | null;
+  publishedAt?: string | null;
+  isBigStory?: boolean;
+  inDailyEdit?: boolean;
+  isBreaking?: boolean;
+  relatedCompanyIds?: string[];
+  createdAt?: string;
+  updatedAt?: string;
+  updatedBy?: string | null;
 }
+
+export type PublishStatus = 'draft' | 'published' | 'scheduled';
+export type LinkBehavior = 'reader' | 'external';
+export type SyndicationLicense =
+  | 'fair_use_summary'
+  | 'full_licensed_syndication'
+  | 'press_release';
+
+export interface ArticleInput {
+  slug: string;
+  title: string;
+  summary: string;
+  category: string;
+  status: PublishStatus;
+  publishedAt: string | null;
+  heroPriority: number | null;
+  inDailyEdit: boolean;
+  isBreaking: boolean;
+  sourceUrl: string;
+  sourceName: string;
+  sourceLogoUrl: string | null;
+  originalAuthor: string | null;
+  originalPublishedAt: string | null;
+  linkBehavior: LinkBehavior;
+  keyTakeaways: string[];
+  tags: string[];
+  coverImageUrl: string;
+  imageCredit: string | null;
+  readTime: string;
+  canonicalUrl: string;
+  syndicationLicense: SyndicationLicense | null;
+  syndicatedBody: string | null;
+  relatedCompanyIds: string[];
+}
+
+export interface AdminProfile {
+  id: string;
+  email: string;
+  fullName: string | null;
+  role: 'admin' | 'editor';
+  avatarUrl: string | null;
+}
+
+export interface Company {
+  id: string;
+  name: string;
+  sector: string | null;
+  websiteUrl: string | null;
+}
+
+export interface SiteSettings {
+  siteName: string;
+  slogan: string;
+  heroHeadline: string;
+  heroSubhead: string;
+  navLinks: Array<{ label: string; href: string }>;
+  breakingEnabled: boolean;
+  breakingLabel: string;
+  dailyEditEnabled: boolean;
+  dailyEditSubject: string;
+  newsletterEnabled: boolean;
+  newsletterHeadline: string;
+  contactEmail: string;
+  updatedAt: string | null;
+}
+
+export const CATEGORIES = [
+  'AI',
+  'Business',
+  'Design',
+  'Fintech',
+  'Hardware',
+  'Management',
+  'Product',
+  'Software Engineering',
+  'Other',
+] as const;
 
 export interface WebsiteConfig {
   siteName: string;

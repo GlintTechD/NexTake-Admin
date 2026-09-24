@@ -45,7 +45,6 @@ const PUBLISH_STATUS_VALUES: PublishStatus[] = [
   "draft",
   "published",
   "scheduled",
-  "archived",
 ];
 
 const asStatus = (value: unknown): PublishStatus => {
@@ -89,13 +88,19 @@ export function mapArticleRow(row: Row): Article {
     linkBehavior: asLinkBehavior(row.link_behavior),
 
     title,
+    excerpt: str(row.excerpt) || str(row.summary),
+    content: str(row.content) || str(row.syndicated_body),
+    author: str(row.author) || str(row.original_author),
+    date: str(row.date) || createdAt,
     summary: str(row.summary) || str(row.excerpt),
     keyTakeaways: stringArray(row.key_takeaways),
     category: str(row.category) || "Other",
     tags: stringArray(row.tags),
     coverImageUrl: str(row.cover_image_url) || str(row.image),
     imageCredit: nullableStr(row.image_credit),
-    readTime: nullableStr(row.read_time),
+    readTime: str(row.read_time),
+    avatar: str(row.avatar),
+    image: str(row.image) || str(row.cover_image_url),
 
     canonicalUrl: str(row.canonical_url) || str(row.source_url),
     syndicationLicense: asLicense(row.syndication_license),
@@ -103,10 +108,7 @@ export function mapArticleRow(row: Row): Article {
 
     status: asStatus(row.status),
     publishedAt: nullableStr(row.published_at),
-    heroPriority:
-      row.hero_priority === null || row.hero_priority === undefined
-        ? null
-        : num(row.hero_priority),
+    isBigStory: num(row.hero_priority) > 0,
     inDailyEdit: bool(row.in_daily_edit),
     isBreaking: bool(row.is_breaking) || bool(row.is_new),
     relatedCompanyIds: stringArray(row.related_company_ids),

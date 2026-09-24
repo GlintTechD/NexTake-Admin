@@ -49,6 +49,7 @@ function mapArticleRow(article: ArticleRow): Article {
     avatar: article.avatar,
     image: article.image,
     isNew: article.is_new,
+    isBigStory: article.status === "published" && !!article.is_new,
   };
 }
 
@@ -285,7 +286,10 @@ useEffect(() => {
         read_time: newArticleData.readTime,
         avatar: newArticleData.avatar,
         image: newArticleData.image,
-        is_new: newArticleData.isNew,
+        is_new:
+          newArticleData.status === "published"
+            ? !!newArticleData.isBigStory
+            : false,
       })
       .select()
       .single();
@@ -347,7 +351,10 @@ useEffect(() => {
         read_time: updatedArticle.readTime,
         avatar: updatedArticle.avatar,
         image: updatedArticle.image,
-        is_new: updatedArticle.isNew,
+        is_new:
+          updatedArticle.status === "published"
+            ? !!updatedArticle.isBigStory
+            : false,
       })
       .eq("id", updatedArticle.id);
 

@@ -115,6 +115,14 @@ function demoArticleFromInput(
   return {
     ...input,
     id,
+    category: input.category,
+    excerpt: input.summary,
+    content: input.syndicatedBody ?? "",
+    author: input.originalAuthor ?? actor,
+    date: now,
+    readTime: input.readTime,
+    avatar: "",
+    image: input.coverImageUrl,
     views: 0,
     createdAt: now,
     updatedAt: now,
@@ -233,8 +241,8 @@ export const demoBackend: Backend = {
           )
           .sort(
             (a, b) =>
-              new Date(b.publishedAt ?? b.createdAt).getTime() -
-              new Date(a.publishedAt ?? a.createdAt).getTime()
+              new Date(b.publishedAt ?? b.createdAt ?? "").getTime() -
+              new Date(a.publishedAt ?? a.createdAt ?? "").getTime()
           )
       );
     },
