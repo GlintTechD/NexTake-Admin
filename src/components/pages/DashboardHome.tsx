@@ -48,7 +48,7 @@ export default function DashboardHome({
               <span className="w-1.5 h-1.5 rounded-full bg-[#7FFFD4] animate-ping" />
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
-              Welcome back, <span className="text-[#7FFFD4]">Promise</span>
+              Welcome back, <span className="text-[#7FFFD4]">Admin</span>
             </h1>
             <p className="text-sm text-slate-300 leading-relaxed">
               Your website and technical blog are running smoothly. You have <strong className="text-white font-semibold">{draftCount} pending drafts</strong> and <strong className="text-white font-semibold">{publishedCount} live articles</strong> reaching over {totalViews.toLocaleString()} readers.
@@ -175,7 +175,7 @@ export default function DashboardHome({
                       {article.title}
                     </h3>
 
-                    <div className="flex items-center gap-3 text-xs text-slate-500">
+                    <div className="flex items-center gap-3 text-xs text-slate-500 flex-wrap">
                       <span>{article.author}</span>
                       <span>•</span>
                       <span>{article.date}</span>
@@ -184,6 +184,12 @@ export default function DashboardHome({
                         <Eye className="w-3 h-3" />
                         {article.views.toLocaleString()} views
                       </span>
+                      <span>•</span>
+                      <span>♥ {Number(article.likes ?? 0).toLocaleString()}</span>
+                      <span>•</span>
+                      <span>💬 {Number(article.comments ?? 0).toLocaleString()}</span>
+                      <span>•</span>
+                      <span>🔖 {Number(article.saves ?? 0).toLocaleString()}</span>
                     </div>
                   </div>
                 </div>

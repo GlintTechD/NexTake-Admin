@@ -79,7 +79,7 @@ export default function AdminHeader({
               </div>
               <div className="hidden xl:flex flex-col text-left">
                 <div className="flex items-center gap-1">
-                  <span className="text-xs font-semibold text-white leading-tight">Promise A.</span>
+                  <span className="text-xs font-semibold text-white leading-tight">Admin</span>
                   <Shield className="w-3 h-3 text-[#7FFFD4]" />
                 </div>
                 <span className="text-[10px] text-slate-400 leading-tight">Super Administrator</span>

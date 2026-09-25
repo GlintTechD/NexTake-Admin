@@ -29,7 +29,7 @@ export default function LogoutModal({
             Log out of NexTake?
           </h2>
           <p className="text-xs sm:text-sm text-slate-500 leading-relaxed">
-            You will end your active session as <strong className="text-[#071A2B]">Promise Akanni</strong> (akannipromise1@gmail.com). Any unsaved draft changes have already been preserved locally.
+            You will end your active session as <strong className="text-[#071A2B]">NexTake Admin</strong> (admin@nexstake.com). Any unsaved draft changes have already been preserved locally.
           </p>
         </div>
 

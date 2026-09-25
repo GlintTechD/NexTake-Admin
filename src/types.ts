@@ -10,6 +10,9 @@ export interface Article {
   date: string;
   status: PublishStatus;
   views: number;
+  likes?: number;
+  comments?: number;
+  saves?: number;
   readTime: string;
   avatar: string;
   image: string;

@@ -81,7 +81,7 @@ export default function AdminFooter({ onNavigate }: AdminFooterProps) {
         <div className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
           <div className="flex items-center gap-2">
             <ShieldCheck className="w-4 h-4 text-[#7FFFD4]" />
-            <span>Authenticated session: Promise Akanni (akannipromise1@gmail.com)</span>
+            <span>Authenticated session: NexTake Admin (admin@nexstake.com)</span>
           </div>
           <div>
             <span>© {new Date().getFullYear()} NexTake Management Console. All rights reserved.</span>

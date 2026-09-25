@@ -28,7 +28,7 @@ interface BlogManagerProps {
 
 type ArticleFormData = Omit<Article, "id" | "date" | "views">;
 
-const DEFAULT_AUTHOR = "Promise Akanni";
+const DEFAULT_AUTHOR = "NexTake Admin";
 const DEFAULT_AVATAR = "https://i.pravatar.cc/64?img=60";
 const MAX_COVER_IMAGE_FILE_SIZE = 8 * 1024 * 1024;
 const ACCEPTED_COVER_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
@@ -469,6 +469,12 @@ export default function BlogManager({
                 <p className="line-clamp-3 text-xs leading-relaxed text-slate-500">
                   {article.excerpt}
                 </p>
+                <div className="flex flex-wrap items-center gap-2 text-[10px] font-semibold text-slate-600">
+                  <span className="rounded-full bg-slate-100 px-2 py-1">👁 {article.views.toLocaleString()} views</span>
+                  <span className="rounded-full bg-slate-100 px-2 py-1">♥ {Number(article.likes ?? 0).toLocaleString()} likes</span>
+                  <span className="rounded-full bg-slate-100 px-2 py-1">💬 {Number(article.comments ?? 0).toLocaleString()} comments</span>
+                  <span className="rounded-full bg-slate-100 px-2 py-1">🔖 {Number(article.saves ?? 0).toLocaleString()} saves</span>
+                </div>
               </div>
             </div>
 

@@ -102,7 +102,7 @@ export const INITIAL_ARTICLES: Article[] = [
     title: "Container cold starts and Node runtime optimization in Cloud Run",
     excerpt: "How bundle stripping and tree-shaking reduce server startup latency from 2.4s to 180ms.",
     content: "By bundling server entry points with esbuild and externalizing node_modules, filesystem stat operations during container boots plummet.",
-    author: "Promise Akanni",
+    author: "NexTake Admin",
     date: "22 Aug 2026",
     status: "draft",
     views: 450,
@@ -119,7 +119,7 @@ export const INITIAL_ACTIVITIES: ActivityItem[] = [
     action: "Published new article",
     target: "UX review presentations that engage engineering teams",
     timestamp: "2 hours ago",
-    user: "Promise Akanni",
+    user: "NexTake Admin",
     type: "publish",
   },
   {
@@ -127,7 +127,7 @@ export const INITIAL_ACTIVITIES: ActivityItem[] = [
     action: "Updated website hero banner",
     target: "Changed subtitle & badge for NexTake v2.4",
     timestamp: "5 hours ago",
-    user: "Promise Akanni",
+    user: "NexTake Admin",
     type: "edit",
   },
   {
@@ -143,7 +143,7 @@ export const INITIAL_ACTIVITIES: ActivityItem[] = [
     action: "Created draft article",
     target: "Container cold starts and Node runtime optimization",
     timestamp: "2 days ago",
-    user: "Promise Akanni",
+    user: "NexTake Admin",
     type: "edit",
   },
 ];

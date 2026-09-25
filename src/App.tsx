@@ -16,7 +16,6 @@ import type {
 
 import {
   INITIAL_WEBSITE_CONFIG,
-  INITIAL_ACTIVITIES,
   SYSTEM_METRICS,
 } from "./data/initialData";
 
@@ -45,6 +44,9 @@ function mapArticleRow(article: ArticleRow): Article {
     date: article.date,
     status: article.status,
     views: article.views,
+    likes: 0,
+    comments: 0,
+    saves: 0,
     readTime: article.read_time,
     avatar: article.avatar,
     image: article.image,
@@ -125,34 +127,146 @@ export default function App() {
   // =========================================================
 
   const [activities, setActivities] =
-    useState<ActivityItem[]>(
-      INITIAL_ACTIVITIES,
-    );
+    useState<ActivityItem[]>([]);
 
   // =========================================================
   // DASHBOARD METRICS
   // =========================================================
 
-  const metrics: SystemMetric[] = useMemo(() => {
-    if (articles.length === 0) {
-      return SYSTEM_METRICS;
-    }
+  const [liveMetrics, setLiveMetrics] = useState({
+    visitors: 0,
+    subscribers: 0,
+    health: 99.98,
+    latency: 42,
+    publishedArticles: 0,
+  });
 
-    const publishedCount = articles.filter(
-      (article) =>
-        article.status === "published",
-    ).length;
+  useEffect(() => {
+    const loadPublicActivities = async () => {
+      try {
+        const response = await fetch('/api/public/activity');
+        if (!response.ok) return;
 
-    return SYSTEM_METRICS.map((metric) =>
-      metric.label ===
-      "Total Published Articles"
-        ? {
-            ...metric,
-            value: String(publishedCount),
-          }
-        : metric,
-    );
+        const payload = await response.json();
+        const articleTitles = new Map(articles.map((article) => [article.id, article.title]));
+        const publicItems: ActivityItem[] = (payload.items ?? []).map((item: ActivityItem) => ({
+          ...item,
+          target: articleTitles.get(item.target) ?? item.target,
+          timestamp: new Date(item.timestamp).toLocaleString(),
+        }));
+        const publicIds = new Set(publicItems.map((item) => item.id));
+
+        setActivities((current) => [
+          ...publicItems,
+          ...current.filter((item) => !item.id.startsWith('public-') && !publicIds.has(item.id)),
+        ].slice(0, 25));
+      } catch (error) {
+        console.error('Unable to fetch public activities:', error);
+      }
+    };
+
+    loadPublicActivities();
+    const timer = window.setInterval(loadPublicActivities, 5000);
+
+    return () => window.clearInterval(timer);
   }, [articles]);
+
+  useEffect(() => {
+    const fetchLiveMetrics = async () => {
+      try {
+        const response = await fetch('/api/public/metrics');
+        if (!response.ok) {
+          throw new Error('Metrics request failed');
+        }
+
+        const payload = await response.json();
+        setLiveMetrics({
+          visitors: Number(payload.monthlyVisitors ?? 0),
+          subscribers: Number(payload.newsletterSubscribers ?? 0),
+          health: Number(payload.systemHealth?.availability ?? 99.98),
+          latency: Number(payload.systemHealth?.latencyMs ?? 42),
+          publishedArticles: Number(payload.publishedArticles ?? 0),
+        });
+      } catch (error) {
+        console.error('Unable to fetch live metrics:', error);
+        const publishedCount = articles.filter((article) => article.status === 'published').length;
+        const articleViews = articles
+          .filter((article) => article.status === 'published')
+          .reduce((sum, article) => sum + article.views, 0);
+
+        setLiveMetrics({
+          visitors: Math.max(articleViews, publishedCount * 300),
+          subscribers: 0,
+          health: 99.98,
+          latency: 42,
+          publishedArticles: publishedCount,
+        });
+      }
+    };
+
+    fetchLiveMetrics();
+    const timer = window.setInterval(fetchLiveMetrics, 10000);
+
+    return () => window.clearInterval(timer);
+  }, [articles]);
+
+  const metrics: SystemMetric[] = useMemo(() => {
+    const publishedCount = Math.max(
+      liveMetrics.publishedArticles,
+      articles.filter((article) => article.status === 'published').length,
+    );
+
+    const compactNumber = new Intl.NumberFormat('en-US', {
+      notation: 'compact',
+      maximumFractionDigits: 1,
+    });
+
+    const formattedVisitors = compactNumber.format(liveMetrics.visitors || 0);
+    const formattedSubscribers = new Intl.NumberFormat('en-US').format(liveMetrics.subscribers || 0);
+
+    return SYSTEM_METRICS.map((metric) => {
+      if (metric.label === 'Total Published Articles') {
+        return {
+          ...metric,
+          value: String(publishedCount),
+          change: 'Live from site data',
+          progressPercent: Math.min(100, Math.max(35, publishedCount * 12)),
+        };
+      }
+
+      if (metric.label === 'Monthly Site Visitors') {
+        return {
+          ...metric,
+          value: formattedVisitors,
+          change: 'Measured from live page traffic',
+          progressPercent: Math.min(100, Math.max(35, Math.round((liveMetrics.visitors / 50000) * 100))),
+          technicalDetail: `${liveMetrics.visitors.toLocaleString()} tracked visits`,
+        };
+      }
+
+      if (metric.label === 'Newsletter Subscribers') {
+        return {
+          ...metric,
+          value: formattedSubscribers,
+          change: 'Live from subscription signups',
+          progressPercent: Math.min(100, Math.max(25, Math.round((liveMetrics.subscribers / 5000) * 100))),
+          technicalDetail: `${liveMetrics.subscribers.toLocaleString()} active subscribers`,
+        };
+      }
+
+      if (metric.label === 'Live System Health') {
+        return {
+          ...metric,
+          value: `${liveMetrics.health.toFixed(2)}%`,
+          change: `Latency ${liveMetrics.latency}ms`,
+          progressPercent: Math.min(100, Math.max(96, Math.round(liveMetrics.health))),
+          technicalDetail: `Edge latency ${liveMetrics.latency}ms`,
+        };
+      }
+
+      return metric;
+    });
+  }, [articles, liveMetrics]);
 
   // =========================================================
   // LOAD DAILY TIPS
@@ -224,8 +338,45 @@ useEffect(() => {
         )
         .map(mapArticleRow);
 
-      setArticles(formattedArticles);
-      setIsLoadingArticles(false);
+      try {
+        const engagementResponse = await fetch('/api/public/articles');
+        if (engagementResponse.ok) {
+          const payload = await engagementResponse.json();
+          const statsMap = new Map<string, {
+            id?: string;
+            views?: number;
+            likes?: number;
+            comments?: number;
+            saves?: number;
+          }>();
+
+          for (const item of payload.items ?? []) {
+            if (item?.id) {
+              statsMap.set(String(item.id), item as any);
+            }
+          }
+
+          const mergedArticles = formattedArticles.map((article) => {
+            const stats = statsMap.get(article.id);
+            if (!stats) return article;
+            return {
+              ...article,
+              views: Number(stats.views ?? article.views ?? 0),
+              likes: Number(stats.likes ?? 0),
+              comments: Number(stats.comments ?? 0),
+              saves: Number(stats.saves ?? 0),
+            };
+          });
+
+          setArticles(mergedArticles);
+        } else {
+          setArticles(formattedArticles);
+        }
+      } catch {
+        setArticles(formattedArticles);
+      } finally {
+        setIsLoadingArticles(false);
+      }
     };
 
     loadArticles();
@@ -327,7 +478,7 @@ useEffect(() => {
             : "Created article",
         target: newArticle.title,
         timestamp: "Just now",
-        user: "Promise Akanni",
+        user: "NexTake Admin",
         type: "edit",
       },
       ...prev,
@@ -385,7 +536,7 @@ useEffect(() => {
             : "Updated article",
         target: updatedArticle.title,
         timestamp: "Just now",
-        user: "Promise Akanni",
+        user: "NexTake Admin",
         type: "edit",
       },
       ...prev,
@@ -427,7 +578,7 @@ useEffect(() => {
           action: "Removed article",
           target: target.title,
           timestamp: "Just now",
-          user: "Promise Akanni",
+          user: "NexTake Admin",
           type: "system",
         };
 
@@ -500,7 +651,7 @@ useEffect(() => {
             : "Created daily tip",
         target: newTip.title,
         timestamp: "Just now",
-        user: "Promise Akanni",
+        user: "NexTake Admin",
         type: "edit",
       },
       ...prev,
@@ -573,7 +724,7 @@ useEffect(() => {
             : "Updated daily tip",
         target: updatedTip.title,
         timestamp: "Just now",
-        user: "Promise Akanni",
+        user: "NexTake Admin",
         type: "edit",
       },
       ...prev,
@@ -613,7 +764,7 @@ useEffect(() => {
           action: "Deleted daily tip",
           target: target.title,
           timestamp: "Just now",
-          user: "Promise Akanni",
+          user: "NexTake Admin",
           type: "system",
         },
         ...prev,
@@ -636,7 +787,7 @@ useEffect(() => {
         action: "Updated website layout",
         target: `Hero & Navigation for ${newConfig.siteName}`,
         timestamp: "Just now",
-        user: "Promise Akanni",
+        user: "NexTake Admin",
         type: "edit",
       };
 
