@@ -20,6 +20,23 @@ import {
 
 import type { WebsiteConfig, Article, DailyTip } from "../../types";
 import NexTakeLogo from "../NexTakeLogo";
+import ImageSourceField from "../ImageSourceField";
+import CategoryCombobox from "../CategoryCombobox";
+import {
+  ARTICLE_CATEGORIES_KEY,
+  TIP_CATEGORIES_KEY,
+  TIP_DEFAULT_CATEGORIES,
+  useCustomCategories,
+} from "../../lib/customCategories";
+
+const POST_CATEGORY_OPTIONS = [
+  "Software Engineering",
+  "Product",
+  "Design",
+  "Management",
+  "Customer Success",
+  "Security",
+];
 
 interface WebsiteManagerProps {
   config: WebsiteConfig;
@@ -94,6 +111,30 @@ const [dailyTipForm, setDailyTipForm] = useState<{
   author: "",
   status: "draft",
 });
+
+  // Saved custom categories (typed by the admin) for both post & tip forms
+  const {
+    customCategories: customPostCategories,
+    registerCustomCategory: registerPostCategory,
+  } = useCustomCategories(ARTICLE_CATEGORIES_KEY);
+  const {
+    customCategories: customTipCategories,
+    registerCustomCategory: registerTipCategory,
+  } = useCustomCategories(TIP_CATEGORIES_KEY);
+
+  const postCategoryOptions = useMemo(() => {
+    const set = new Set<string>(POST_CATEGORY_OPTIONS);
+    for (const article of articles) set.add(article.category);
+    for (const category of customPostCategories) set.add(category);
+    return Array.from(set);
+  }, [articles, customPostCategories]);
+
+  const tipCategoryOptions = useMemo(() => {
+    const set = new Set<string>(TIP_DEFAULT_CATEGORIES);
+    for (const tip of dailyTips) set.add(tip.category);
+    for (const category of customTipCategories) set.add(category);
+    return Array.from(set);
+  }, [dailyTips, customTipCategories]);
 
   const showConfigPublishMessage = (message: string) => {
     setConfigPublishMessage(message);
@@ -1231,18 +1272,17 @@ const handleSaveDailyTip = (e: React.FormEvent) => {
                   <label className="text-xs font-bold uppercase tracking-wider text-slate-600 block">
                     Category Tag
                   </label>
-                  <select
+                  <CategoryCombobox
+                    id="edit-post-category"
                     value={editFormData.category}
-                    onChange={(e) => setEditFormData({ ...editFormData, category: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-[#071A2B]/20 text-[#071A2B] text-sm font-semibold focus:outline-none focus:border-[#071A2B]"
-                  >
-                    <option value="Software Engineering">Software Engineering</option>
-                    <option value="Product">Product</option>
-                    <option value="Design">Design</option>
-                    <option value="Management">Management</option>
-                    <option value="Customer Success">Customer Success</option>
-                    <option value="Security">Security</option>
-                  </select>
+                    onChange={(category) =>
+                      setEditFormData({ ...editFormData, category })
+                    }
+                    options={postCategoryOptions}
+                    onCommitCustom={registerPostCategory}
+                    placeholder="Type a category or pick a saved one"
+                    inputClassName="w-full px-3.5 py-2.5 rounded-xl border border-[#071A2B]/20 text-[#071A2B] text-sm font-semibold focus:outline-none focus:border-[#071A2B]"
+                  />
                 </div>
 
                 <div className="space-y-1.5">
@@ -1276,15 +1316,14 @@ const handleSaveDailyTip = (e: React.FormEvent) => {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold uppercase tracking-wider text-slate-600 block">
-                    Cover Image URL
-                  </label>
-                  <input
-                    type="url"
+                  <ImageSourceField
+                    key={editingArticle?.id ?? "edit-post"}
+                    id="edit-post-cover-image"
+                    label="Cover Image"
                     value={editFormData.image}
-                    onChange={(e) => setEditFormData({ ...editFormData, image: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-[#071A2B]/20 text-[#071A2B] text-xs font-mono focus:outline-none focus:border-[#071A2B]"
-                    required
+                    onChange={(image) =>
+                      setEditFormData({ ...editFormData, image })
+                    }
                   />
                 </div>
               </div>
@@ -1415,24 +1454,20 @@ const handleSaveDailyTip = (e: React.FormEvent) => {
                     Category
                   </label>
 
-                  <select
+                  <CategoryCombobox
+                    id="daily-tip-category"
                     value={dailyTipForm.category}
-                    onChange={(e) =>
+                    onChange={(category) =>
                       setDailyTipForm({
                         ...dailyTipForm,
-                        category: e.target.value,
+                        category,
                       })
                     }
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-[#071A2B]/20 text-[#071A2B] text-sm font-semibold focus:outline-none focus:border-[#071A2B]"
-                  >
-                    <option value="Finance">Finance</option>
-                    <option value="Technology">Technology</option>
-                    <option value="Productivity">Productivity</option>
-                    <option value="Business">Business</option>
-                    <option value="Career">Career</option>
-                    <option value="Security">Security</option>
-                    <option value="Lifestyle">Lifestyle</option>
-                  </select>
+                    options={tipCategoryOptions}
+                    onCommitCustom={registerTipCategory}
+                    placeholder="Type a category or pick a saved one"
+                    inputClassName="w-full px-3.5 py-2.5 rounded-xl border border-[#071A2B]/20 text-[#071A2B] text-sm font-semibold focus:outline-none focus:border-[#071A2B]"
+                  />
                 </div>
 
                 <div className="space-y-1.5">
@@ -1486,21 +1521,17 @@ const handleSaveDailyTip = (e: React.FormEvent) => {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold uppercase tracking-wider text-slate-600 block">
-                    Image URL
-                  </label>
-
-                  <input
-                    type="url"
+                  <ImageSourceField
+                    key={editingDailyTip?.id ?? "new-daily-tip"}
+                    id="daily-tip-image"
+                    label="Tip Image"
                     value={dailyTipForm.image}
-                    onChange={(e) =>
+                    onChange={(image) =>
                       setDailyTipForm({
                         ...dailyTipForm,
-                        image: e.target.value,
+                        image,
                       })
                     }
-                    placeholder="https://..."
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-[#071A2B]/20 text-[#071A2B] text-xs font-mono focus:outline-none focus:border-[#071A2B]"
                   />
                 </div>
               </div>

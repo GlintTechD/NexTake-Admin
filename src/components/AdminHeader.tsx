@@ -22,7 +22,7 @@ export default function AdminHeader({
       className="sticky top-0 z-40 bg-[#071A2B] border-b border-[#0f2c45] text-white select-none transition-colors"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16 sm:h-20">
+        <div className="flex items-center justify-between h-16 sm:h-20 lg:h-24">
           
           {/* Brand Logo - Implemented as Full Header Brand */}
           <div className="flex items-center gap-3 sm:gap-5 flex-1 min-w-0 mr-4">

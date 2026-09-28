@@ -10,11 +10,11 @@ export default function NexTakeLogo({
   lightMode = false,
 }: NexTakeLogoProps) {
   const heightClasses = {
-    sm: "h-7 sm:h-8",
-    md: "h-9 sm:h-10",
-    lg: "h-11 sm:h-12",
-    xl: "h-14 sm:h-16",
-    header: "h-10 sm:h-12 md:h-14",
+    sm: "h-9 sm:h-10",
+    md: "h-10 sm:h-12",
+    lg: "h-14 sm:h-16",
+    xl: "h-16 sm:h-20",
+    header: "h-10 sm:h-16 lg:h-20",
   };
 
   const maxWidthClasses = {
@@ -22,19 +22,19 @@ export default function NexTakeLogo({
     md: "max-w-[260px] sm:max-w-[300px]",
     lg: "max-w-[320px] sm:max-w-[380px]",
     xl: "max-w-[400px] sm:max-w-[480px]",
-    header: "max-w-[300px] sm:max-w-[420px] md:max-w-[520px]",
+    header: "max-w-[320px] sm:max-w-[420px] lg:max-w-[520px]",
   };
 
   return (
     <div className={`inline-flex items-center select-none ${className}`}>
       {/* Authentic user brand header image */}
       <img
-        src="/header.svg"
+        src="/header.png"
         onError={(e) => {
-          // Graceful fallback to PNG if needed
+          // Graceful fallback to vector logo if needed
           const target = e.currentTarget;
-          if (!target.src.endsWith("/header.png")) {
-            target.src = "/header.png";
+          if (!target.src.endsWith("/header.svg")) {
+            target.src = "/header.svg";
           }
         }}
         alt="NexTake - Technology News. Intelligently Curated."

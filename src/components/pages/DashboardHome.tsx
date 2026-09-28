@@ -3,7 +3,6 @@ import {
   Globe, 
   TrendingUp, 
   Eye, 
-  Sparkles, 
   Activity,
   Layers,
   ArrowRight,
@@ -42,11 +41,6 @@ export default function DashboardHome({
         
         <div className="relative flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-2 max-w-2xl">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#0d263d] border border-[#7FFFD4]/30 text-xs font-semibold text-[#7FFFD4]">
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>NexTake Portal Active</span>
-              <span className="w-1.5 h-1.5 rounded-full bg-[#7FFFD4] animate-ping" />
-            </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
               Welcome back, <span className="text-[#7FFFD4]">Admin</span>
             </h1>
