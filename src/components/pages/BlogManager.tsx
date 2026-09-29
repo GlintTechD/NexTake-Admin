@@ -1,8 +1,6 @@
 import {
   useMemo,
   useState,
-  type ChangeEvent,
-  type DragEvent,
   type FormEvent,
 } from "react";
 import {
@@ -15,6 +13,12 @@ import {
   X,
 } from "lucide-react";
 import type { Article } from "../../types";
+import ImageSourceField from "../ImageSourceField";
+import CategoryCombobox from "../CategoryCombobox";
+import {
+  DEFAULT_CATEGORIES,
+  useCustomCategories,
+} from "../../lib/customCategories";
 
 interface BlogManagerProps {
   articles: Article[];
@@ -30,8 +34,6 @@ type ArticleFormData = Omit<Article, "id" | "date" | "views">;
 
 const DEFAULT_AUTHOR = "NexTake Admin";
 const DEFAULT_AVATAR = "https://i.pravatar.cc/64?img=60";
-const MAX_COVER_IMAGE_FILE_SIZE = 8 * 1024 * 1024;
-const ACCEPTED_COVER_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
 function createEmptyFormData(): ArticleFormData {
   return {
@@ -48,43 +50,6 @@ function createEmptyFormData(): ArticleFormData {
   };
 }
 
-function loadImage(src: string): Promise<HTMLImageElement> {
-  return new Promise((resolve, reject) => {
-    const image = new Image();
-    image.onload = () => resolve(image);
-    image.onerror = () =>
-      reject(new Error("We couldn't read that image. Please try another file."));
-    image.src = src;
-  });
-}
-
-async function convertImageToDataUrl(file: File): Promise<string> {
-  const objectUrl = URL.createObjectURL(file);
-
-  try {
-    const image = await loadImage(objectUrl);
-    const maxWidth = 1600;
-    const maxHeight = 900;
-    const scale = Math.min(maxWidth / image.width, maxHeight / image.height, 1);
-    const width = Math.max(1, Math.round(image.width * scale));
-    const height = Math.max(1, Math.round(image.height * scale));
-
-    const canvas = document.createElement("canvas");
-    canvas.width = width;
-    canvas.height = height;
-
-    const context = canvas.getContext("2d");
-    if (!context) {
-      throw new Error("We couldn't prepare that image right now.");
-    }
-
-    context.drawImage(image, 0, 0, width, height);
-    return canvas.toDataURL("image/jpeg", 0.85);
-  } finally {
-    URL.revokeObjectURL(objectUrl);
-  }
-}
-
 export default function BlogManager({
   articles,
   onAddArticle,
@@ -98,10 +63,9 @@ export default function BlogManager({
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
   const [editingArticle, setEditingArticle] = useState<Article | null>(null);
-  const [coverImageError, setCoverImageError] = useState("");
-  const [coverImageFileName, setCoverImageFileName] = useState("");
+  const [coverImageSubmitError, setCoverImageSubmitError] = useState("");
   const [isPreparingCoverImage, setIsPreparingCoverImage] = useState(false);
-  const [isDraggingCoverImage, setIsDraggingCoverImage] = useState(false);
+  const { customCategories, registerCustomCategory } = useCustomCategories();
 
   // Form state for creating or editing article
   const [formData, setFormData] = useState<ArticleFormData>(createEmptyFormData);
@@ -110,6 +74,15 @@ export default function BlogManager({
     const set = new Set(articles.map((article) => article.category));
     return ["All", ...Array.from(set)];
   }, [articles]);
+
+  // All pickable categories for the article form: built-ins, categories
+  // already used by articles, and manually typed ones saved for reuse.
+  const categoryOptions = useMemo(() => {
+    const set = new Set<string>(DEFAULT_CATEGORIES);
+    for (const article of articles) set.add(article.category);
+    for (const category of customCategories) set.add(category);
+    return Array.from(set);
+  }, [articles, customCategories]);
 
   const filteredArticles = useMemo(() => {
     return articles.filter((article) => {
@@ -134,8 +107,7 @@ export default function BlogManager({
 
   const handleOpenEdit = (article: Article) => {
     setEditingArticle(article);
-    setCoverImageError("");
-    setCoverImageFileName("");
+    setCoverImageSubmitError("");
     setFormData({
       title: article.title,
       category: article.category,
@@ -154,87 +126,9 @@ export default function BlogManager({
   const handleCloseModal = () => {
     setEditingArticle(null);
     onCloseNewModal();
-    setCoverImageError("");
-    setCoverImageFileName("");
+    setCoverImageSubmitError("");
     setIsPreparingCoverImage(false);
-    setIsDraggingCoverImage(false);
     setFormData(createEmptyFormData());
-  };
-
-  const processCoverImageFile = async (file: File) => {
-    setCoverImageError("");
-
-    if (!ACCEPTED_COVER_IMAGE_TYPES.includes(file.type)) {
-      setCoverImageFileName("");
-      setCoverImageError("Please upload a JPG, PNG, or WebP image.");
-      return;
-    }
-
-    if (file.size > MAX_COVER_IMAGE_FILE_SIZE) {
-      setCoverImageFileName("");
-      setCoverImageError("Please choose an image smaller than 8 MB.");
-      return;
-    }
-
-    setIsPreparingCoverImage(true);
-
-    try {
-      const imageDataUrl = await convertImageToDataUrl(file);
-      setFormData((current) => ({
-        ...current,
-        image: imageDataUrl,
-      }));
-      setCoverImageFileName(file.name);
-    } catch (error) {
-      console.error("Error preparing cover image:", error);
-      setCoverImageFileName("");
-      setCoverImageError(
-        "We couldn't prepare that image. Please try another file."
-      );
-    } finally {
-      setIsPreparingCoverImage(false);
-    }
-  };
-
-  const handleCoverImageChange = async (
-    event: ChangeEvent<HTMLInputElement>
-  ) => {
-    const file = event.target.files?.[0];
-    event.target.value = "";
-
-    if (!file) return;
-
-    await processCoverImageFile(file);
-  };
-
-  const handleCoverImageDragOver = (event: DragEvent<HTMLLabelElement>) => {
-    event.preventDefault();
-    setIsDraggingCoverImage(true);
-  };
-
-  const handleCoverImageDragLeave = (event: DragEvent<HTMLLabelElement>) => {
-    event.preventDefault();
-    setIsDraggingCoverImage(false);
-  };
-
-  const handleCoverImageDrop = async (event: DragEvent<HTMLLabelElement>) => {
-    event.preventDefault();
-    setIsDraggingCoverImage(false);
-
-    const file = event.dataTransfer.files?.[0];
-    if (!file) return;
-
-    await processCoverImageFile(file);
-  };
-
-  const handleRemoveCoverImage = () => {
-    setFormData((current) => ({
-      ...current,
-      image: "",
-    }));
-    setCoverImageFileName("");
-    setCoverImageError("");
-    setIsDraggingCoverImage(false);
   };
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
@@ -244,13 +138,19 @@ export default function BlogManager({
     const excerpt = formData.excerpt.trim();
     const content = formData.content.trim();
     const author = formData.author.trim() || DEFAULT_AUTHOR;
+    const category = formData.category.trim() || DEFAULT_CATEGORIES[0];
 
     if (!title || !excerpt || isPreparingCoverImage) return;
 
     if (!formData.image) {
-      setCoverImageError("Please upload a cover image before saving the article.");
+      setCoverImageSubmitError(
+        "Please add a cover image (upload a file or use a URL) before saving the article."
+      );
       return;
     }
+
+    // Save a manually typed category as a pickable option for future articles
+    registerCustomCategory(category);
 
     const nextArticle = {
       ...formData,
@@ -258,6 +158,7 @@ export default function BlogManager({
       excerpt,
       content,
       author,
+      category,
     };
 
     if (editingArticle) {
@@ -587,21 +488,20 @@ export default function BlogManager({
                   <label className="block text-xs font-bold uppercase tracking-wider text-slate-600">
                     Category
                   </label>
-                  <select
+                  <CategoryCombobox
+                    id="article-category"
                     value={formData.category}
-                    onChange={(e) =>
-                      setFormData({ ...formData, category: e.target.value })
+                    onChange={(category) =>
+                      setFormData({ ...formData, category })
                     }
-                    className="w-full rounded-xl border border-[#071A2B]/20 px-3.5 py-2.5 text-sm font-semibold text-[#071A2B] focus:border-[#071A2B] focus:outline-none"
-                  >
-                    <option value="Software Engineering">
-                      Software Engineering
-                    </option>
-                    <option value="Design">Design</option>
-                    <option value="Product">Product</option>
-                    <option value="Management">Management</option>
-                    <option value="Customer Success">Customer Success</option>
-                  </select>
+                    options={categoryOptions}
+                    onCommitCustom={registerCustomCategory}
+                    placeholder="Type a category or pick a saved one"
+                  />
+                  <p className="text-[11px] text-slate-400">
+                    Type anything — typed categories are saved as pickable
+                    options for future articles.
+                  </p>
                 </div>
 
                 <div className="space-y-1">
@@ -688,78 +588,18 @@ export default function BlogManager({
                 />
               </div>
 
-              <div className="space-y-3">
-                <div className="flex items-center justify-between gap-3">
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-600">
-                    Cover Image
-                  </label>
-                  {formData.image && (
-                    <button
-                      type="button"
-                      onClick={handleRemoveCoverImage}
-                      className="text-[11px] font-semibold text-rose-600 transition-colors hover:text-rose-700"
-                    >
-                      Remove image
-                    </button>
-                  )}
-                </div>
-
-                <label
-                  onDragOver={handleCoverImageDragOver}
-                  onDragEnter={handleCoverImageDragOver}
-                  onDragLeave={handleCoverImageDragLeave}
-                  onDrop={handleCoverImageDrop}
-                  className={`block cursor-pointer rounded-2xl border border-dashed p-5 transition-colors ${
-                    isDraggingCoverImage
-                      ? "border-[#7FFFD4] bg-[#7FFFD4]/10"
-                      : "border-[#071A2B]/20 bg-slate-50/70 hover:border-[#071A2B]/40 hover:bg-slate-50"
-                  }`}
-                >
-                  <input
-                    type="file"
-                    accept="image/png,image/jpeg,image/webp"
-                    onChange={handleCoverImageChange}
-                    className="hidden"
-                  />
-                  <div className="space-y-1 text-center">
-                    <p className="text-sm font-semibold text-[#071A2B]">
-                      {isPreparingCoverImage
-                        ? "Preparing cover image..."
-                        : isDraggingCoverImage
-                          ? "Drop cover image here"
-                          : formData.image
-                            ? "Replace cover image"
-                            : "Upload cover image"}
-                    </p>
-                    <p className="text-xs text-slate-500">
-                      {coverImageFileName
-                        ? coverImageFileName
-                        : editingArticle && formData.image
-                          ? "Current cover image is ready. Click or drag a new file here to replace it."
-                          : "Click to choose, or drag and drop a JPG, PNG, or WebP file here instead of pasting a URL."}
-                    </p>
-                    <p className="text-[11px] text-slate-400">
-                      Images are optimized automatically and saved with the article.
-                    </p>
-                  </div>
-                </label>
-
-                {coverImageError && (
-                  <p className="text-xs font-medium text-rose-600">
-                    {coverImageError}
-                  </p>
-                )}
-
-                {formData.image && (
-                  <div className="overflow-hidden rounded-2xl border border-[#071A2B]/10 bg-slate-50">
-                    <img
-                      src={formData.image}
-                      alt="Cover preview"
-                      className="h-52 w-full object-cover"
-                    />
-                  </div>
-                )}
-              </div>
+              <ImageSourceField
+                key={editingArticle?.id ?? "new-article"}
+                id="article-cover-image"
+                label="Cover Image"
+                value={formData.image}
+                onChange={(image) => {
+                  setFormData((current) => ({ ...current, image }));
+                  setCoverImageSubmitError("");
+                }}
+                onPendingChange={setIsPreparingCoverImage}
+                externalError={coverImageSubmitError}
+              />
 
               <div className="flex items-center justify-end gap-3 border-t border-[#071A2B]/10 pt-4">
                 <button
