@@ -20,6 +20,8 @@ import {
   ok,
   type Backend,
   type BackendResult,
+  type SuperAdminSignUpInput,
+  type SuperAdminSignUpOutcome,
   type VerificationDispatch,
 } from "./types";
 import { relativeTime } from "./utils";
@@ -48,6 +50,15 @@ function authErrorMessage(message: string): string {
   }
   if (text.includes("signups not allowed")) {
     return "New administrator accounts are disabled for this project.";
+  }
+  if (
+    text.includes("already registered") ||
+    text.includes("already been registered")
+  ) {
+    return "That address already has an account. Sign in instead.";
+  }
+  if (text.includes("super administrator already exists")) {
+    return "A super administrator already exists. Sign-up is permanently closed.";
   }
   if (text.includes("failed to send") || text.includes("error sending")) {
     return "We could not deliver the verification email. Try again in a moment.";
@@ -203,6 +214,65 @@ export const supabaseBackend: Backend = {
     async signOut() {
       const client = requireClient();
       await client.auth.signOut();
+    },
+
+    /**
+     * Asks the database — through the SECURITY DEFINER probe installed by the
+     * super-admin migration — whether the seat is still unclaimed. Any error
+     * (e.g. migration not applied yet) resolves to "unavailable": the safe
+     * default, since claiming is impossible server-side anyway.
+     */
+    async superAdminAvailable(): Promise<BackendResult<boolean>> {
+      const client = requireClient();
+      const { data, error } = await client.rpc("nextake_super_admin_exists");
+
+      if (error || typeof data !== "boolean") {
+        return ok(false);
+      }
+      return ok(!data);
+    },
+
+    /**
+     * One-time bootstrap of the super administrator.
+     *
+     * The auth account is created by Supabase Auth; the database trigger from
+     * the super-admin migration attaches the `admin` profile to the new user
+     * ONLY while no super administrator exists yet. A partial unique index
+     * guarantees a second one can never be created, whatever the client does.
+     *
+     * Any session minted by the provider is dropped immediately: console
+     * access still requires the normal two-step verification.
+     */
+    async signUpSuperAdmin(
+      input: SuperAdminSignUpInput
+    ): Promise<BackendResult<SuperAdminSignUpOutcome>> {
+      const client = requireClient();
+
+      const { data, error } = await client.auth.signUp({
+        email: input.email.trim(),
+        password: input.password,
+        options: {
+          data: {
+            // Read by nextake_claim_super_admin_seat() in the migration.
+            nextake_super_admin: "true",
+            full_name: input.fullName.trim(),
+          },
+          emailRedirectTo: window.location.origin,
+        },
+      });
+
+      if (error) return fail(authErrorMessage(error.message));
+      if (!data.user) return fail("Sign-up failed. Try again in a moment.");
+
+      if (data.session) {
+        // Email confirmation is disabled on this project — the provider just
+        // minted a session. Drop it: a console session only follows the
+        // two-step verification, never a raw sign-up.
+        await client.auth.signOut();
+        return ok({ needsEmailConfirmation: false });
+      }
+
+      return ok({ needsEmailConfirmation: true });
     },
 
     onChange(listener) {

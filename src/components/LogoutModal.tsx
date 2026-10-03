@@ -1,4 +1,5 @@
 import { LogOut, CheckCircle2 } from "lucide-react";
+import { useAuth } from "../lib/auth/context";
 
 interface LogoutModalProps {
   isOpen: boolean;
@@ -11,7 +12,13 @@ export default function LogoutModal({
   onClose,
   onConfirmLogout,
 }: LogoutModalProps) {
+  const { profile } = useAuth();
+
   if (!isOpen) return null;
+
+  const identity = profile
+    ? `${profile.fullName ?? "Console user"}${profile.email ? ` (${profile.email})` : ""}`
+    : "your account";
 
   return (
     <div 
@@ -29,7 +36,7 @@ export default function LogoutModal({
             Log out of NexTake?
           </h2>
           <p className="text-xs sm:text-sm text-slate-500 leading-relaxed">
-            You will end your active session as <strong className="text-[#071A2B]">NexTake Admin</strong> (admin@nexstake.com). Any unsaved draft changes have already been preserved locally.
+            You will end your active session as <strong className="text-[#071A2B]">{identity}</strong>. Any unsaved draft changes have already been preserved locally.
           </p>
         </div>
 

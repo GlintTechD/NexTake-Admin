@@ -13,6 +13,8 @@ import {
   ok,
   type Backend,
   type BackendResult,
+  type SuperAdminSignUpInput,
+  type SuperAdminSignUpOutcome,
   type VerificationDispatch,
 } from "./types";
 import { relativeTime } from "./utils";
@@ -32,9 +34,37 @@ const KEY_SESSION = "nextake.demo.session";
 const KEY_ACTIVITY = "nextake.demo.activity";
 const KEY_CODE = "nextake.demo.code";
 const KEY_SUBSCRIBERS = "nextake.demo.subscribers";
+const KEY_SUPER_ADMIN = "nextake.demo.superadmin";
 
 /** Demo codes are short-lived so the outbox panel is easy to reason about. */
 const DEMO_CODE_TTL_SECONDS = 600;
+
+/**
+ * The demo workspace's single super administrator. Mirrors the one-time seat
+ * the database migration enforces in production: once this record exists,
+ * `signUpSuperAdmin` refuses every later attempt. The password is kept as a
+ * SHA-256 digest only — the demo never stores it in plain text either.
+ */
+interface DemoSuperAdmin {
+  email: string;
+  fullName: string;
+  passwordHash: string;
+  createdAt: string;
+}
+
+async function sha256Hex(value: string): Promise<string> {
+  const digest = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(value)
+  );
+  return Array.from(new Uint8Array(digest))
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+function readSuperAdmin(): DemoSuperAdmin | null {
+  return read<DemoSuperAdmin | null>(KEY_SUPER_ADMIN, null);
+}
 
 interface DemoSession {
   id: string;
@@ -207,6 +237,44 @@ export const demoBackend: Backend = {
     async signOut() {
       window.localStorage.removeItem(KEY_SESSION);
       emit();
+    },
+
+    async superAdminAvailable(): Promise<BackendResult<boolean>> {
+      return ok(readSuperAdmin() === null);
+    },
+
+    /**
+     * Demo mirror of the one-time bootstrap: the first call creates the super
+     * administrator, every later call is refused — exactly what the database
+     * trigger + unique index enforce in production.
+     */
+    async signUpSuperAdmin(
+      input: SuperAdminSignUpInput
+    ): Promise<BackendResult<SuperAdminSignUpOutcome>> {
+      await delay(450);
+
+      if (readSuperAdmin() !== null) {
+        return fail(
+          "A super administrator already exists. Sign-up is permanently closed."
+        );
+      }
+
+      const email = input.email.trim().toLowerCase();
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) {
+        return fail("Enter a valid email address.");
+      }
+      if (input.password.length < 8) {
+        return fail("Password must be at least 8 characters.");
+      }
+
+      const record: DemoSuperAdmin = {
+        email,
+        fullName: input.fullName.trim() || "Super Administrator",
+        passwordHash: await sha256Hex(input.password),
+        createdAt: new Date().toISOString(),
+      };
+      write(KEY_SUPER_ADMIN, record);
+      return ok({ needsEmailConfirmation: false });
     },
 
     onChange(listener) {
