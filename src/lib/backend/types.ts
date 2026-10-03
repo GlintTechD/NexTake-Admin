@@ -28,6 +28,20 @@ export interface VerificationDispatch {
   devCode?: string;
 }
 
+export interface SuperAdminSignUpInput {
+  fullName: string;
+  email: string;
+  password: string;
+}
+
+export interface SuperAdminSignUpOutcome {
+  /**
+   * True when the auth provider requires an email confirmation before the
+   * new super administrator can sign in (the usual production setting).
+   */
+  needsEmailConfirmation: boolean;
+}
+
 export interface Backend {
   mode: BackendMode;
 
@@ -50,6 +64,20 @@ export interface Backend {
     signOut(): Promise<void>;
     /** Fires on sign-in, sign-out and session expiry. */
     onChange(listener: (profile: AdminProfile | null) => void): () => void;
+    /**
+     * Whether the single super-administrator seat can still be claimed.
+     * Returns `false` (never throws) once a super administrator exists — the
+     * database itself refuses a second one regardless of what the UI shows.
+     */
+    superAdminAvailable(): Promise<BackendResult<boolean>>;
+    /**
+     * One-time bootstrap: creates the super administrator account. Fails
+     * after a super administrator exists — enforced by the database, not by
+     * this client.
+     */
+    signUpSuperAdmin(
+      input: SuperAdminSignUpInput
+    ): Promise<BackendResult<SuperAdminSignUpOutcome>>;
   };
 
   articles: {

@@ -86,6 +86,28 @@ works, so existing sessions and RLS policies keep functioning.
 * No credential, service key or secret is hard-coded anywhere in the client. Secrets
   belong in server-side environment variables (`VITE_SUPABASE_URL`,
   `VITE_SUPABASE_ANON_KEY` are the only public ones and carry no privilege beyond RLS).
+  (An earlier revision of the sign-out footer and the legacy logged-out screen showed
+  a hard-coded administrator identity. That has been removed — the footer now renders
+  the signed-in profile only.)
+
+### Super administrator sign-up (one-time)
+
+* The console can bootstrap exactly **one** super administrator
+  (`admin_profiles.role = 'admin'`). While the seat is empty the sign-in screen
+  shows "Create the super administrator"; once it is claimed the option is gone for
+  good. Further team members are invited from **System → Users**, never via sign-up.
+* The invariant is enforced **in the database** by
+  `supabase/migrations/20261004_super_admin_signup.sql`, not by the UI:
+  - `nextake_super_admin_exists()` — a `SECURITY DEFINER` probe that exposes only a
+    boolean to anonymous callers, so the sign-up screen can decide whether to offer
+    the form without ever reading `admin_profiles`.
+  - `nextake_claim_super_admin_seat()` — a trigger on `auth.users` that attaches the
+    `admin` profile to a new user only when the sign-up metadata carries
+    `nextake_super_admin: 'true'` **and** no super administrator exists yet.
+  - `admin_profiles_single_super_admin` — a partial unique index (`role = 'admin'`)
+    guaranteeing a second row can never be inserted, whatever the client does.
+* The migration is additive and idempotent. It creates no data and only adds the
+  unique index when the current data already satisfies it (zero or one admin row).
 
 ---
 
@@ -229,11 +251,16 @@ Video production and distribution belong to NexTake's **separate video system**.
 ## 9. Applying the migration
 
 ```bash
-# review first — the file is additive and idempotent
+# review first — the files are additive and idempotent
 supabase db push
-# or run it directly
+# or run them directly
 psql "$DATABASE_URL" -f supabase/migrations/20261003_nextake_intelligence.sql
+psql "$DATABASE_URL" -f supabase/migrations/20261004_super_admin_signup.sql
 ```
+
+The second file enables the one-time super administrator sign-up described under
+*Authentication → Super administrator sign-up*. It adds the existence probe, the
+claiming trigger and the single-seat unique index; it never rewrites data.
 
 Safe properties:
 
