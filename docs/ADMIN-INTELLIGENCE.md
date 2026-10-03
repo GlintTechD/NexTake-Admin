@@ -294,8 +294,8 @@ VITE_SUPABASE_URL=...
 VITE_SUPABASE_ANON_KEY=...
 ```
 
-With neither variable set, sign in with any valid email and an 8+ character password;
-the demo verification code is displayed on screen.
+There is no sign-in page: the console opens directly into the dashboard, acting as a
+built-in local administrator (or as an already-restored backend session, if one exists).
 
 ---
 

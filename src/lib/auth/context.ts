@@ -1,36 +1,12 @@
 import { createContext, useContext } from "react";
 import type { AdminProfile } from "../../types";
 
-export type AuthStatus =
-  | "loading"
-  | "unauthenticated"
-  | "awaiting_verification"
-  | "verifying"
-  | "authenticating"
-  | "authenticated";
-
-export interface VerificationMeta {
-  email: string;
-  sentAt: number;
-  expiresAt: number;
-  /** Demo backend only: the code that would otherwise have been emailed. */
-  devCode?: string;
-}
-
 export interface AuthContextValue {
-  status: AuthStatus;
-  profile: AdminProfile | null;
-  error: string | null;
-  notice: string | null;
-  verification: VerificationMeta | null;
-  /** Seconds until a new code may be requested. */
-  resendCooldown: number;
-  signIn(email: string, password: string): Promise<boolean>;
-  verifyCode(code: string): Promise<boolean>;
-  resendCode(): Promise<void>;
-  cancelVerification(): void;
-  signOut(): Promise<void>;
-  clearMessages(): void;
+  /**
+   * The acting profile. There is no sign-in screen: a restored backend session
+   * is used when one exists, otherwise the built-in local administrator.
+   */
+  profile: AdminProfile;
 }
 
 export const AuthContext = createContext<AuthContextValue | null>(null);

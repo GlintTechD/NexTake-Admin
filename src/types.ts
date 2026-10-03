@@ -11,7 +11,6 @@
 export type NavPageId =
   /* system / shell */
   | 'home'
-  | 'logout'
   /* editorial */
   | 'blog'
   | 'articles'
