@@ -1,4 +1,48 @@
-export type NavPageId = 'home' | 'website' | 'blog' | 'logout';
+/**
+ * Admin navigation ids.
+ *
+ * The console grew from three screens (dashboard / website / blog) into the
+ * Operations Department information architecture. The original ids are kept so
+ * existing callers keep working:
+ *   `home`    → Insights dashboard
+ *   `website` → Publishing › Homepage (public site preview unaffected)
+ *   `blog`    → Editorial › Articles
+ */
+export type NavPageId =
+  /* system / shell */
+  | 'home'
+  | 'logout'
+  /* editorial */
+  | 'blog'
+  | 'articles'
+  | 'article-editor'
+  | 'interviews'
+  | 'shorts'
+  | 'sources'
+  | 'claims'
+  | 'media'
+  /* intelligence */
+  | 'startups'
+  | 'startup-dossier'
+  | 'people'
+  | 'companies'
+  | 'industries'
+  | 'events'
+  /* relationships */
+  | 'related-stories'
+  | 'startup-coverage'
+  | 'entity-suggestions'
+  /* publishing */
+  | 'website'
+  | 'homepage'
+  | 'newsletter'
+  /* insights */
+  | 'analytics'
+  | 'activity'
+  /* system */
+  | 'users'
+  | 'roles'
+  | 'settings';
 
 export interface Article {
   id: string;
@@ -17,6 +61,32 @@ export interface Article {
   avatar: string;
   image: string;
   isNew?: boolean;
+
+  /* --- Editorial workflow (Operations brief §8–§11) ---------------------- */
+  /** Article | interview | short. Video is handled by a separate system. */
+  type?: 'article' | 'interview' | 'short';
+  /** Reviewer-facing state layered on top of `status`. */
+  reviewState?: 'draft' | 'in_review' | 'changes_requested' | 'approved';
+  reviewerId?: string | null;
+  submittedForReviewAt?: string | null;
+  approvedAt?: string | null;
+  archived?: boolean;
+  archivedAt?: string | null;
+  seo?: {
+    slug?: string;
+    metaTitle?: string;
+    metaDescription?: string;
+    ogImageUrl?: string;
+  };
+  relatedArticleIds?: string[];
+  relatedStartupIds?: string[];
+  relatedPersonIds?: string[];
+  relatedIndustryIds?: string[];
+  relatedEventIds?: string[];
+  sourceIds?: string[];
+  featuredMediaId?: string | null;
+  /** Interview-only: the person being interviewed. */
+  intervieweeId?: string | null;
 
   slug?: string;
   sourceUrl?: string;
@@ -81,7 +151,20 @@ export interface AdminProfile {
   id: string;
   email: string;
   fullName: string | null;
-  role: 'admin' | 'editor';
+  /**
+   * Roles are defined in `lib/permissions.ts`. The original `admin` / `editor`
+   * pair is preserved (and still the only pair Supabase rows can hold today),
+   * so existing sessions and RLS policies keep working.
+   */
+  role:
+    | 'admin'
+    | 'editor'
+    | 'editor_in_chief'
+    | 'managing_editor'
+    | 'writer'
+    | 'researcher'
+    | 'fact_checker'
+    | 'analyst';
   avatarUrl: string | null;
 }
 

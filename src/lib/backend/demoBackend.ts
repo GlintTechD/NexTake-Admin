@@ -361,6 +361,8 @@ export const demoBackend: Backend = {
 
   storage: {
     async upload(file, _folder) {
+      /* Folder routing is irrelevant to the local data-URL store. */
+      void _folder;
       await delay(500);
       try {
         const url = await new Promise<string>((resolve, reject) => {

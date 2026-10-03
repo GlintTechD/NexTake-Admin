@@ -22,12 +22,35 @@ import {
 import AdminHeader from "./components/AdminHeader";
 import AdminSidebar from "./components/AdminSidebar";
 import AdminFooter from "./components/AdminFooter";
-import DashboardHome from "./components/pages/DashboardHome";
+import DashboardPage from "./components/pages/DashboardPage";
 import WebsiteManager from "./components/pages/WebsiteManager";
 import BlogManager from "./components/pages/BlogManager";
+import ArticlesWorkspace from "./components/pages/editorial/ArticlesWorkspace";
+import ArticleEditorPage from "./components/pages/editorial/ArticleEditorPage";
+import SourcesPage from "./components/pages/editorial/SourcesPage";
+import MediaLibraryPage from "./components/pages/editorial/MediaLibraryPage";
+import StartupsPage from "./components/pages/intelligence/StartupsPage";
+import StartupDossierPage from "./components/pages/intelligence/StartupDossierPage";
+import PeoplePage from "./components/pages/intelligence/PeoplePage";
+import {
+  CompaniesPage,
+  IndustriesPage,
+  EventsPage,
+} from "./components/pages/intelligence/MasterDataPages";
+import {
+  RelatedStoriesPage,
+  StartupCoveragePage,
+  EntitySuggestionsPage,
+} from "./components/pages/relationships/RelationshipPages";
+import HomepagePage from "./components/pages/publishing/HomepagePage";
+import NewsletterPage from "./components/pages/publishing/NewsletterPage";
+import { ActivityLogPage, AnalyticsPage } from "./components/pages/insights/InsightsPages";
+import { RolesPage, SettingsPage, UsersPage } from "./components/pages/system/SystemPages";
 import LogoutModal from "./components/LogoutModal";
-import LoggedOutView from "./components/LoggedOutView";
 import LiveWebsiteModal from "./components/LiveWebsiteModal";
+import { PAGE_LABELS, fromHash, groupForPage, toHash, type AdminRoute } from "./lib/navigation";
+import { useAuth } from "./lib/auth/context";
+import { useWorkspace } from "./lib/workspace/context";
 
 /* -------------------------------------------------------------------------- */
 /*                              DATA MAPPERS                                  */
@@ -75,10 +98,26 @@ function mapDailyTipRow(tip: DailyTipRow): DailyTip {
 /* -------------------------------------------------------------------------- */
 
 export default function App() {
-  const [currentPage, setCurrentPage] =
-    useState<NavPageId>("home");
+  const { signOut } = useAuth();
+  const workspace = useWorkspace();
 
-  const [isLoggedIn, setIsLoggedIn] = useState(true);
+  /**
+   * Hash routing keeps every console screen linkable and survivable across a
+   * refresh, without pulling in a router dependency.
+   */
+  const [route, setRoute] = useState<AdminRoute>(
+    () => fromHash(window.location.hash) ?? { page: "home", params: {} },
+  );
+
+  useEffect(() => {
+    const syncFromHash = () => {
+      const next = fromHash(window.location.hash);
+      if (next) setRoute(next);
+    };
+
+    window.addEventListener("hashchange", syncFromHash);
+    return () => window.removeEventListener("hashchange", syncFromHash);
+  }, []);
 
   const [mobileMenuOpen, setMobileMenuOpen] =
     useState(false);
@@ -350,9 +389,15 @@ useEffect(() => {
             saves?: number;
           }>();
 
-          for (const item of payload.items ?? []) {
+          for (const item of (payload.items ?? []) as Array<{
+            id?: string;
+            views?: number;
+            likes?: number;
+            comments?: number;
+            saves?: number;
+          }>) {
             if (item?.id) {
-              statsMap.set(String(item.id), item as any);
+              statsMap.set(String(item.id), item);
             }
           }
 
@@ -386,15 +431,19 @@ useEffect(() => {
   // NAVIGATION
   // =========================================================
 
-  const handleNavigate = (
-    page: NavPageId,
-  ) => {
-    if (page === "logout") {
+  const handleNavigate = (next: AdminRoute) => {
+    if (next.page === "logout") {
       setIsLogoutModalOpen(true);
       return;
     }
 
-    setCurrentPage(page);
+    setRoute(next);
+
+    const hash = toHash(next);
+    if (window.location.hash !== hash) {
+      /* Push a history entry so browser back/forward walks the console. */
+      window.history.pushState(null, "", hash);
+    }
 
     window.scrollTo({
       top: 0,
@@ -402,18 +451,17 @@ useEffect(() => {
     });
   };
 
+  /** Convenience for callbacks that only need a page id. */
+  const goToPage = (page: NavPageId, params: AdminRoute["params"] = {}) =>
+    handleNavigate({ page, params });
+
   // =========================================================
   // AUTH / LOGOUT
   // =========================================================
 
   const handleConfirmLogout = () => {
     setIsLogoutModalOpen(false);
-    setIsLoggedIn(false);
-  };
-
-  const handleLogin = () => {
-    setIsLoggedIn(true);
-    setCurrentPage("home");
+    void signOut();
   };
 
   // =========================================================
@@ -798,16 +846,240 @@ useEffect(() => {
   };
 
   // =========================================================
-  // LOGGED OUT
+  // BREADCRUMBS
   // =========================================================
 
-  if (!isLoggedIn) {
-    return (
-      <LoggedOutView
-        onLogin={handleLogin}
-      />
-    );
-  }
+  const breadcrumbs = useMemo(() => {
+    const group = groupForPage(route.page);
+    const label = PAGE_LABELS[route.page];
+    return group && group.id !== "overview" ? [group.label, label] : [label];
+  }, [route.page]);
+
+  // =========================================================
+  // PAGE SWITCH
+  // =========================================================
+
+  const renderPage = () => {
+    switch (route.page) {
+      /* ---------------------------------------------------------------- */
+      /* OVERVIEW                                                         */
+      /* ---------------------------------------------------------------- */
+
+      case "home":
+        return (
+          <DashboardPage
+            onNavigate={handleNavigate}
+            onOpenLiveSite={() => setIsLiveWebsiteOpen(true)}
+            metrics={metrics}
+            activities={activities}
+          />
+        );
+
+      /* ---------------------------------------------------------------- */
+      /* EDITORIAL                                                        */
+      /* ---------------------------------------------------------------- */
+
+      case "blog":
+        return (
+          <BlogManager
+            articles={articles}
+            onAddArticle={handleAddArticle}
+            onUpdateArticle={handleUpdateArticle}
+            onDeleteArticle={handleDeleteArticle}
+            isNewModalOpen={isNewArticleModalOpen}
+            onCloseNewModal={() => setIsNewArticleModalOpen(false)}
+            onOpenNewModal={() => setIsNewArticleModalOpen(true)}
+          />
+        );
+
+      case "articles":
+        return (
+          <ArticlesWorkspace
+            onOpenEditor={(articleId) =>
+              articleId
+                ? handleNavigate({ page: "article-editor", params: { articleId } })
+                : handleNavigate({ page: "article-editor", params: {} })
+            }
+            onOpenBoard={() => goToPage("blog")}
+            onOpenLiveSite={() => setIsLiveWebsiteOpen(true)}
+          />
+        );
+
+      case "interviews":
+        return (
+          <ArticlesWorkspace
+            typeLock="interview"
+            onOpenEditor={(articleId) =>
+              articleId
+                ? handleNavigate({ page: "article-editor", params: { articleId } })
+                : handleNavigate({ page: "article-editor", params: {} })
+            }
+            onOpenBoard={() => goToPage("blog")}
+            onOpenLiveSite={() => setIsLiveWebsiteOpen(true)}
+          />
+        );
+
+      case "shorts":
+        return (
+          <ArticlesWorkspace
+            typeLock="short"
+            onOpenEditor={(articleId) =>
+              articleId
+                ? handleNavigate({ page: "article-editor", params: { articleId } })
+                : handleNavigate({ page: "article-editor", params: {} })
+            }
+            onOpenBoard={() => goToPage("blog")}
+            onOpenLiveSite={() => setIsLiveWebsiteOpen(true)}
+          />
+        );
+
+      case "article-editor":
+        return (
+          <ArticleEditorPage
+            articleId={route.params.articleId}
+            onExit={(savedId) =>
+              savedId
+                ? handleNavigate({ page: "article-editor", params: { articleId: savedId } })
+                : goToPage("articles")
+            }
+          />
+        );
+
+      case "sources":
+        return <SourcesPage openSourceId={route.params.sourceId} />;
+
+      case "claims":
+        return <SourcesPage initialTab="claims" openSourceId={route.params.sourceId} />;
+
+      case "media":
+        return <MediaLibraryPage />;
+
+      /* ---------------------------------------------------------------- */
+      /* INTELLIGENCE                                                     */
+      /* ---------------------------------------------------------------- */
+
+      case "startups":
+        return (
+          <StartupsPage
+            onOpenDossier={(startupId) =>
+              handleNavigate({ page: "startup-dossier", params: { startupId } })
+            }
+          />
+        );
+
+      case "startup-dossier": {
+        const startupId = route.params.startupId ?? workspace.startups.items[0]?.id ?? "";
+        if (!startupId) return <StartupsPage onOpenDossier={() => undefined} />;
+        return (
+          <StartupDossierPage
+            startupId={startupId}
+            onExit={() => goToPage("startups")}
+            onOpenArticle={(articleId) =>
+              handleNavigate({ page: "article-editor", params: { articleId } })
+            }
+          />
+        );
+      }
+
+      case "people":
+        return <PeoplePage openPersonId={route.params.personId} />;
+
+      case "companies":
+        return <CompaniesPage />;
+
+      case "industries":
+        return <IndustriesPage />;
+
+      case "events":
+        return <EventsPage />;
+
+      /* ---------------------------------------------------------------- */
+      /* RELATIONSHIPS                                                    */
+      /* ---------------------------------------------------------------- */
+
+      case "related-stories":
+        return (
+          <RelatedStoriesPage
+            openArticle={(articleId) =>
+              handleNavigate({ page: "article-editor", params: { articleId } })
+            }
+          />
+        );
+
+      case "startup-coverage":
+        return (
+          <StartupCoveragePage
+            openArticle={(articleId) =>
+              handleNavigate({ page: "article-editor", params: { articleId } })
+            }
+            openDossier={(startupId) =>
+              handleNavigate({ page: "startup-dossier", params: { startupId } })
+            }
+          />
+        );
+
+      case "entity-suggestions":
+        return <EntitySuggestionsPage />;
+
+      /* ---------------------------------------------------------------- */
+      /* PUBLISHING                                                       */
+      /* ---------------------------------------------------------------- */
+
+      case "homepage":
+        return <HomepagePage onOpenLiveSite={() => setIsLiveWebsiteOpen(true)} />;
+
+      case "website":
+        return (
+          <WebsiteManager
+            config={websiteConfig}
+            onUpdateConfig={handleUpdateWebsiteConfig}
+            onOpenLiveSite={() => setIsLiveWebsiteOpen(true)}
+            articles={articles}
+            onUpdateArticle={handleUpdateArticle}
+            dailyTips={dailyTips}
+            onCreateDailyTip={handleCreateDailyTip}
+            onUpdateDailyTip={handleUpdateDailyTip}
+            onDeleteDailyTip={handleDeleteDailyTip}
+          />
+        );
+
+      case "newsletter":
+        return <NewsletterPage openCampaignId={route.params.campaignId} />;
+
+      /* ---------------------------------------------------------------- */
+      /* INSIGHTS                                                         */
+      /* ---------------------------------------------------------------- */
+
+      case "analytics":
+        return <AnalyticsPage />;
+
+      case "activity":
+        return <ActivityLogPage />;
+
+      /* ---------------------------------------------------------------- */
+      /* SYSTEM                                                           */
+      /* ---------------------------------------------------------------- */
+
+      case "users":
+        return <UsersPage />;
+
+      case "roles":
+        return <RolesPage />;
+
+      case "settings":
+        return <SettingsPage />;
+
+      default:
+        return (
+          <DashboardPage
+            onNavigate={handleNavigate}
+            onOpenLiveSite={() => setIsLiveWebsiteOpen(true)}
+            metrics={metrics}
+            activities={activities}
+          />
+        );
+    }
+  };
 
   // =========================================================
   // MAIN APPLICATION
@@ -817,32 +1089,22 @@ useEffect(() => {
     <div className="min-h-screen flex flex-col bg-white text-[#071A2B]">
       {/* HEADER */}
       <AdminHeader
-        currentPage={currentPage}
         onNavigate={handleNavigate}
         mobileMenuOpen={mobileMenuOpen}
-        onToggleMobileMenu={() =>
-          setMobileMenuOpen(
-            !mobileMenuOpen,
-          )
-        }
-        onOpenLiveSite={() =>
-          setIsLiveWebsiteOpen(true)
-        }
+        onToggleMobileMenu={() => setMobileMenuOpen(!mobileMenuOpen)}
+        onOpenLiveSite={() => setIsLiveWebsiteOpen(true)}
+        breadcrumbs={breadcrumbs}
       />
 
       {/* MAIN LAYOUT */}
       <div className="flex-1 flex max-w-7xl w-full mx-auto">
         {/* SIDEBAR */}
         <AdminSidebar
-          currentPage={currentPage}
+          currentPage={route.page}
           onNavigate={handleNavigate}
           mobileMenuOpen={mobileMenuOpen}
-          onCloseMobileMenu={() =>
-            setMobileMenuOpen(false)
-          }
-          articleCount={
-            articles.length
-          }
+          onCloseMobileMenu={() => setMobileMenuOpen(false)}
+          onLogout={() => setIsLogoutModalOpen(true)}
         />
 
         {/* CONTENT */}
@@ -851,110 +1113,12 @@ useEffect(() => {
           className="flex-1 w-full lg:pl-64 bg-white min-h-[calc(100vh-140px)] transition-all"
         >
           <div className="p-4 sm:p-6 lg:p-10 max-w-6xl mx-auto">
-            {isLoadingArticles ? (
+            {(route.page === "blog" || route.page === "website") && isLoadingArticles ? (
               <div className="flex items-center justify-center py-20">
-                <p className="text-sm text-slate-500">
-                  Loading articles...
-                </p>
+                <p className="text-sm text-slate-500">Loading articles...</p>
               </div>
             ) : (
-              <>
-                {/* =====================================================
-                    DASHBOARD
-                ====================================================== */}
-
-                {currentPage ===
-                  "home" && (
-                  <DashboardHome
-                    articles={articles}
-                    metrics={metrics}
-                    activities={activities}
-                    onNavigate={
-                      handleNavigate
-                    }
-                    onOpenNewArticleModal={() => {
-                      setCurrentPage(
-                        "blog",
-                      );
-                      setIsNewArticleModalOpen(
-                        true,
-                      );
-                    }}
-                  />
-                )}
-
-                {/* =====================================================
-                    WEBSITE MANAGER
-                ====================================================== */}
-
-                {currentPage ===
-                  "website" && (
-                  <WebsiteManager
-                    config={
-                      websiteConfig
-                    }
-                    onUpdateConfig={
-                      handleUpdateWebsiteConfig
-                    }
-                    onOpenLiveSite={() =>
-                      setIsLiveWebsiteOpen(
-                        true,
-                      )
-                    }
-                    articles={articles}
-                    onUpdateArticle={
-                      handleUpdateArticle
-                    }
-                    dailyTips={
-                      dailyTips
-                    }
-                    onCreateDailyTip={
-                      handleCreateDailyTip
-                    }
-                    onUpdateDailyTip={
-                      handleUpdateDailyTip
-                    }
-                    onDeleteDailyTip={
-                      handleDeleteDailyTip
-                    }
-                  />
-                )}
-
-                {/* =====================================================
-                    BLOG MANAGER
-                ====================================================== */}
-
-                {currentPage ===
-                  "blog" && (
-                  <BlogManager
-                    articles={
-                      articles
-                    }
-                    onAddArticle={
-                      handleAddArticle
-                    }
-                    onUpdateArticle={
-                      handleUpdateArticle
-                    }
-                    onDeleteArticle={
-                      handleDeleteArticle
-                    }
-                    isNewModalOpen={
-                      isNewArticleModalOpen
-                    }
-                    onCloseNewModal={() =>
-                      setIsNewArticleModalOpen(
-                        false,
-                      )
-                    }
-                    onOpenNewModal={() =>
-                      setIsNewArticleModalOpen(
-                        true,
-                      )
-                    }
-                  />
-                )}
-              </>
+              renderPage()
             )}
           </div>
         </main>
@@ -962,36 +1126,20 @@ useEffect(() => {
 
       {/* FOOTER */}
       <div className="lg:pl-64 bg-[#071A2B]">
-        <AdminFooter
-          onNavigate={handleNavigate}
-        />
+        <AdminFooter onNavigate={(page) => goToPage(page)} />
       </div>
 
       {/* LOGOUT MODAL */}
       <LogoutModal
-        isOpen={
-          isLogoutModalOpen
-        }
-        onClose={() =>
-          setIsLogoutModalOpen(
-            false,
-          )
-        }
-        onConfirmLogout={
-          handleConfirmLogout
-        }
+        isOpen={isLogoutModalOpen}
+        onClose={() => setIsLogoutModalOpen(false)}
+        onConfirmLogout={handleConfirmLogout}
       />
 
       {/* LIVE WEBSITE MODAL */}
       <LiveWebsiteModal
-        isOpen={
-          isLiveWebsiteOpen
-        }
-        onClose={() =>
-          setIsLiveWebsiteOpen(
-            false,
-          )
-        }
+        isOpen={isLiveWebsiteOpen}
+        onClose={() => setIsLiveWebsiteOpen(false)}
         config={websiteConfig}
         articles={articles}
       />
