@@ -1,12 +1,26 @@
-import { LayoutDashboard, Globe, FileText, LogOut, ChevronRight, Zap } from "lucide-react";
+/**
+ * Admin sidebar — the Operations Department information architecture.
+ *
+ * Groups: Overview / Editorial / Intelligence / Relationships / Publishing /
+ * Insights / System. This is the *administrative* navigation only: the public
+ * NexTake navigation is unchanged and still driven by site settings.
+ */
+
+import { useMemo, useState } from "react";
+import { ChevronDown, ChevronRight, LogOut, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { NAV_GROUPS, type AdminRoute } from "../lib/navigation";
+import { can } from "../lib/permissions";
+import { useAuth } from "../lib/auth/context";
+import { useWorkspace } from "../lib/workspace/context";
+import { editorialStateLabel } from "../lib/workspace/articleAdapter";
 import type { NavPageId } from "../types";
 
 interface AdminSidebarProps {
   currentPage: NavPageId;
-  onNavigate: (page: NavPageId) => void;
+  onNavigate: (route: AdminRoute) => void;
   mobileMenuOpen: boolean;
   onCloseMobileMenu: () => void;
-  articleCount: number;
+  onLogout: () => void;
 }
 
 export default function AdminSidebar({
@@ -14,173 +28,199 @@ export default function AdminSidebar({
   onNavigate,
   mobileMenuOpen,
   onCloseMobileMenu,
-  articleCount,
+  onLogout,
 }: AdminSidebarProps) {
-  const navItems = [
-    {
-      id: 'home' as NavPageId,
-      label: 'Home page',
-      description: 'Dashboard & live health',
-      icon: LayoutDashboard,
-      badge: null,
-    },
-    {
-      id: 'website' as NavPageId,
-      label: 'Website',
-      description: 'Structure, hero & layout',
-      icon: Globe,
-      badge: 'LIVE',
-    },
-    {
-      id: 'blog' as NavPageId,
-      label: 'Blog',
-      description: 'Articles & editor',
-      icon: FileText,
-      badge: articleCount > 0 ? `${articleCount}` : null,
-      isNewBadge: true,
-    },
-    {
-      id: 'logout' as NavPageId,
-      label: 'Log out',
-      description: 'End admin session',
-      icon: LogOut,
-      badge: null,
-      isDanger: true,
-    },
-  ];
+  const { profile } = useAuth();
+  const workspace = useWorkspace();
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
 
-  const handleItemClick = (pageId: NavPageId) => {
-    onNavigate(pageId);
+  const counts = useMemo(() => {
+    const articles = workspace.articles.items;
+    return {
+      blog: articles.filter((article) => !article.archived).length,
+      interviews: articles.filter(
+        (article) => (article.type ?? "article") === "interview" && !article.archived
+      ).length,
+      shorts: articles.filter(
+        (article) => (article.type ?? "article") === "short" && !article.archived
+      ).length,
+      sources: workspace.sources.items.length,
+      startups: workspace.startups.items.length,
+      people: workspace.people.items.length,
+      media: workspace.media.items.length,
+      newsletter: workspace.newsletter.items.length,
+      entitySuggestions: workspace.suggestions.items.filter(
+        (suggestion) => suggestion.status === "pending"
+      ).length,
+      activity: workspace.audit.items.length,
+      users: workspace.users.items.length,
+      review: articles.filter((article) => editorialStateLabel(article) === "In review").length,
+      claims: workspace.claims.items.filter((claim) => !claim.verifiedAt).length,
+    } as Record<string, number>;
+  }, [workspace]);
+
+  const handleItemClick = (page: NavPageId) => {
+    onNavigate({ page, params: {} });
     onCloseMobileMenu();
   };
 
   return (
     <>
-      {/* Mobile Backdrop */}
       {mobileMenuOpen && (
         <div
           id="mobile-sidebar-backdrop"
           onClick={onCloseMobileMenu}
-          className="fixed inset-0 z-30 bg-black/60 backdrop-blur-xs lg:hidden transition-opacity"
+          className="fixed inset-0 z-30 bg-black/60 backdrop-blur-xs transition-opacity lg:hidden"
         />
       )}
 
-      {/* Sidebar Navigation Panel */}
       <aside
         id="admin-sidebar"
-        className={`fixed top-16 sm:top-18 bottom-0 left-0 z-35 w-64 bg-[#071A2B] border-r border-[#0f2c45] flex flex-col justify-between transition-transform duration-200 ease-in-out lg:translate-x-0 ${
-          mobileMenuOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'
+        className={`fixed bottom-0 left-0 top-16 z-35 flex w-64 flex-col justify-between border-r border-[#0f2c45] bg-[#071A2B] transition-transform duration-200 ease-in-out sm:top-18 lg:translate-x-0 ${
+          mobileMenuOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full"
         }`}
       >
-        {/* Navigation Sections */}
-        <div className="p-4 space-y-6 overflow-y-auto">
-          <div>
-            <span className="px-3 text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-2">
-              Management Portal
+        <div className="flex-1 space-y-5 overflow-y-auto p-4">
+          <div className="flex items-center justify-between px-1">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+              Management portal
             </span>
-            <nav id="admin-nav-list" aria-label="Admin Sections" className="space-y-1.5">
-              {navItems.slice(0, 3).map((item) => {
-                const isActive = currentPage === item.id;
-                const Icon = item.icon;
+            <span className="rounded bg-[#0f2c45] px-1.5 py-0.5 font-mono text-[9px] font-semibold text-[#7FFFD4]">
+              v2.6
+            </span>
+          </div>
 
-                return (
-                  <button
-                    key={item.id}
-                    id={`sidebar-nav-${item.id}`}
-                    onClick={() => handleItemClick(item.id)}
-                    className={`w-full group flex items-center justify-between px-3.5 py-3 rounded-xl text-left transition-all cursor-pointer ${
-                      isActive
-                        ? 'bg-[#7FFFD4]/12 text-[#7FFFD4] font-semibold ring-1 ring-[#7FFFD4]/30'
-                        : 'text-slate-300 hover:text-white hover:bg-white/5'
+          {NAV_GROUPS.map((group) => {
+            const items = group.items.filter(
+              (item) => !item.permission || can(profile, item.permission)
+            );
+            if (items.length === 0) return null;
+
+            const isCollapsed = collapsed[group.id] ?? false;
+            const hasActive = items.some((item) => item.id === currentPage);
+
+            return (
+              <div key={group.id}>
+                <button
+                  onClick={() =>
+                    setCollapsed((current) => ({ ...current, [group.id]: !isCollapsed }))
+                  }
+                  className="mb-1.5 flex w-full cursor-pointer items-center justify-between px-3 text-left"
+                >
+                  <span
+                    className={`text-[10px] font-bold uppercase tracking-[0.15em] ${
+                      hasActive ? "text-[#7FFFD4]" : "text-slate-500"
                     }`}
                   >
-                    <div className="flex items-center gap-3">
-                      <div
-                        className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${
-                          isActive
-                            ? 'bg-[#7FFFD4] text-[#071A2B]'
-                            : 'bg-[#0f2c45] text-slate-300 group-hover:text-white group-hover:bg-[#163857]'
-                        }`}
-                      >
-                        <Icon className="w-4 h-4" />
-                      </div>
-                      <div className="flex flex-col">
-                        <span className="text-sm tracking-tight">{item.label}</span>
-                        <span className="text-[10px] text-slate-400 font-normal leading-none mt-0.5">
-                          {item.description}
-                        </span>
-                      </div>
-                    </div>
+                    {group.label}
+                  </span>
+                  {isCollapsed ? (
+                    <ChevronRight className="h-3 w-3 text-slate-500" />
+                  ) : (
+                    <ChevronDown className="h-3 w-3 text-slate-500" />
+                  )}
+                </button>
 
-                    <div className="flex items-center gap-1.5">
-                      {item.badge && (
-                        <span
-                          className={`text-[10px] font-bold px-1.5 py-0.5 rounded tracking-wide ${
-                            item.isNewBadge
-                              ? 'bg-[#7FFFD4] text-[#071A2B]'
-                              : 'bg-[#0f2c45] text-[#7FFFD4] border border-[#7FFFD4]/30'
+                {!isCollapsed && (
+                  <nav aria-label={group.label} className="space-y-1">
+                    {items.map((item) => {
+                      const isActive = currentPage === item.id;
+                      const Icon = item.icon;
+                      const count = counts[item.id];
+                      const badge =
+                        item.id === "entity-suggestions" && counts.entitySuggestions > 0
+                          ? counts.entitySuggestions
+                          : item.id === "blog" && counts.review > 0
+                          ? counts.review
+                          : item.id === "claims" && counts.claims > 0
+                          ? counts.claims
+                          : typeof count === "number" && count > 0 && item.id !== "activity"
+                          ? null
+                          : null;
+
+                      return (
+                        <button
+                          key={item.id}
+                          id={`sidebar-nav-${item.id}`}
+                          onClick={() => handleItemClick(item.id)}
+                          title={item.description}
+                          className={`group flex w-full cursor-pointer items-center justify-between rounded-xl px-3 py-2.5 text-left transition-all ${
+                            isActive
+                              ? "bg-[#7FFFD4]/12 font-semibold text-[#7FFFD4] ring-1 ring-[#7FFFD4]/30"
+                              : "text-slate-300 hover:bg-white/5 hover:text-white"
                           }`}
                         >
-                          {item.badge}
-                        </span>
-                      )}
-                      {isActive && (
-                        <span className="w-1.5 h-1.5 rounded-full bg-[#7FFFD4]" />
-                      )}
-                    </div>
-                  </button>
-                );
-              })}
-            </nav>
-          </div>
+                          <span className="flex min-w-0 items-center gap-2.5">
+                            <span
+                              className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg transition-colors ${
+                                isActive
+                                  ? "bg-[#7FFFD4] text-[#071A2B]"
+                                  : "bg-[#0f2c45] text-slate-300 group-hover:bg-[#163857] group-hover:text-white"
+                              }`}
+                            >
+                              <Icon className="h-3.5 w-3.5" />
+                            </span>
+                            <span className="truncate text-[13px] tracking-tight">
+                              {item.label}
+                            </span>
+                          </span>
 
-          {/* Quick Stats Widget in Sidebar */}
-          <div className="p-3.5 rounded-xl bg-[#092238] border border-[#10314d] space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-semibold uppercase text-slate-400 flex items-center gap-1">
-                <Zap className="w-3 h-3 text-[#7FFFD4]" />
-                NexTake Sync
-              </span>
-              <span className="text-[10px] text-[#7FFFD4] font-mono font-medium">99.9% Up</span>
-            </div>
-            {/* Progress indicator */}
-            <div className="w-full bg-[#071A2B] h-1.5 rounded-full overflow-hidden">
-              <div 
-                className="bg-[#7FFFD4] h-full rounded-full transition-all duration-500"
-                style={{ width: '84%' }}
-              />
-            </div>
-            <div className="flex items-center justify-between text-[11px] text-slate-400 pt-0.5">
-              <span>Cloud Engine</span>
-              <span className="text-white font-medium">Connected</span>
-            </div>
-          </div>
+                          <span className="flex shrink-0 items-center gap-1.5">
+                            {typeof badge === "number" && badge > 0 && (
+                              <span className="rounded bg-[#7FFFD4] px-1.5 py-0.5 text-[9px] font-extrabold text-[#071A2B]">
+                                {badge}
+                              </span>
+                            )}
+                            {isActive && (
+                              <span className="h-1.5 w-1.5 rounded-full bg-[#7FFFD4]" />
+                            )}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </nav>
+                )}
+              </div>
+            );
+          })}
         </div>
 
-        {/* Bottom Section: Log out button */}
-        <div className="p-4 border-t border-[#0f2c45]">
+        <div className="space-y-3 border-t border-[#0f2c45] p-4">
+          <div className="rounded-xl border border-[#10314d] bg-[#092238] p-3">
+            <div className="flex items-center justify-between text-[11px]">
+              <span className="font-semibold uppercase text-slate-400">Workspace</span>
+              <span className="font-mono text-[10px] text-[#7FFFD4]">
+                {workspace.backendMode === "supabase" ? "Database" : "Local"}
+              </span>
+            </div>
+            <div className="mt-2 flex items-center justify-between text-[10px] text-slate-400">
+              <span>{workspace.articles.items.length} stories</span>
+              <span>{workspace.startups.items.length} dossiers</span>
+            </div>
+          </div>
+
           <button
             id="sidebar-nav-logout"
-            onClick={() => handleItemClick('logout')}
-            className={`w-full group flex items-center justify-between px-3.5 py-3 rounded-xl text-left transition-all cursor-pointer ${
-              currentPage === 'logout'
-                ? 'bg-rose-500/20 text-rose-300 font-semibold ring-1 ring-rose-500/40'
-                : 'text-slate-300 hover:text-rose-300 hover:bg-rose-500/10'
-            }`}
+            onClick={onLogout}
+            className="group flex w-full cursor-pointer items-center justify-between rounded-xl px-3 py-2.5 text-left text-slate-300 transition-all hover:bg-rose-500/10 hover:text-rose-300"
           >
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-[#0f2c45] group-hover:bg-rose-950/60 flex items-center justify-center text-slate-300 group-hover:text-rose-300 transition-colors">
-                <LogOut className="w-4 h-4" />
-              </div>
-              <div className="flex flex-col">
-                <span className="text-sm tracking-tight font-medium">Log out</span>
-                <span className="text-[10px] text-slate-400 font-normal leading-none mt-0.5">
-                  End admin session
-                </span>
-              </div>
-            </div>
-            <ChevronRight className="w-4 h-4 text-slate-500 group-hover:text-rose-300 transition-colors" />
+            <span className="flex items-center gap-2.5">
+              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#0f2c45] text-slate-300 group-hover:bg-rose-950/60 group-hover:text-rose-300">
+                <LogOut className="h-3.5 w-3.5" />
+              </span>
+              <span className="text-[13px] font-medium">Log out</span>
+            </span>
+            <ChevronRight className="h-4 w-4 text-slate-500 group-hover:text-rose-300" />
           </button>
+
+          <p className="flex items-center justify-center gap-1 text-[10px] text-slate-500">
+            {mobileMenuOpen ? (
+              <PanelLeftClose className="h-3 w-3" />
+            ) : (
+              <PanelLeftOpen className="h-3 w-3" />
+            )}
+            Public site navigation is unchanged
+          </p>
         </div>
       </aside>
     </>
