@@ -46,10 +46,8 @@ import HomepagePage from "./components/pages/publishing/HomepagePage";
 import NewsletterPage from "./components/pages/publishing/NewsletterPage";
 import { ActivityLogPage, AnalyticsPage } from "./components/pages/insights/InsightsPages";
 import { RolesPage, SettingsPage, UsersPage } from "./components/pages/system/SystemPages";
-import LogoutModal from "./components/LogoutModal";
 import LiveWebsiteModal from "./components/LiveWebsiteModal";
 import { PAGE_LABELS, fromHash, groupForPage, toHash, type AdminRoute } from "./lib/navigation";
-import { useAuth } from "./lib/auth/context";
 import { useWorkspace } from "./lib/workspace/context";
 
 /* -------------------------------------------------------------------------- */
@@ -98,7 +96,6 @@ function mapDailyTipRow(tip: DailyTipRow): DailyTip {
 /* -------------------------------------------------------------------------- */
 
 export default function App() {
-  const { signOut } = useAuth();
   const workspace = useWorkspace();
 
   /**
@@ -125,9 +122,6 @@ export default function App() {
   // =========================================================
   // MODALS
   // =========================================================
-
-  const [isLogoutModalOpen, setIsLogoutModalOpen] =
-    useState(false);
 
   const [isLiveWebsiteOpen, setIsLiveWebsiteOpen] =
     useState(false);
@@ -432,11 +426,6 @@ useEffect(() => {
   // =========================================================
 
   const handleNavigate = (next: AdminRoute) => {
-    if (next.page === "logout") {
-      setIsLogoutModalOpen(true);
-      return;
-    }
-
     setRoute(next);
 
     const hash = toHash(next);
@@ -454,15 +443,6 @@ useEffect(() => {
   /** Convenience for callbacks that only need a page id. */
   const goToPage = (page: NavPageId, params: AdminRoute["params"] = {}) =>
     handleNavigate({ page, params });
-
-  // =========================================================
-  // AUTH / LOGOUT
-  // =========================================================
-
-  const handleConfirmLogout = () => {
-    setIsLogoutModalOpen(false);
-    void signOut();
-  };
 
   // =========================================================
   // ARTICLE ACTIONS
@@ -1104,7 +1084,6 @@ useEffect(() => {
           onNavigate={handleNavigate}
           mobileMenuOpen={mobileMenuOpen}
           onCloseMobileMenu={() => setMobileMenuOpen(false)}
-          onLogout={() => setIsLogoutModalOpen(true)}
         />
 
         {/* CONTENT */}
@@ -1128,13 +1107,6 @@ useEffect(() => {
       <div className="lg:pl-64 bg-[#071A2B]">
         <AdminFooter onNavigate={(page) => goToPage(page)} />
       </div>
-
-      {/* LOGOUT MODAL */}
-      <LogoutModal
-        isOpen={isLogoutModalOpen}
-        onClose={() => setIsLogoutModalOpen(false)}
-        onConfirmLogout={handleConfirmLogout}
-      />
 
       {/* LIVE WEBSITE MODAL */}
       <LiveWebsiteModal

@@ -7,7 +7,7 @@
  */
 
 import { useMemo, useState } from "react";
-import { ChevronDown, ChevronRight, LogOut, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { ChevronDown, ChevronRight, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { NAV_GROUPS, type AdminRoute } from "../lib/navigation";
 import { can } from "../lib/permissions";
 import { useAuth } from "../lib/auth/context";
@@ -20,7 +20,6 @@ interface AdminSidebarProps {
   onNavigate: (route: AdminRoute) => void;
   mobileMenuOpen: boolean;
   onCloseMobileMenu: () => void;
-  onLogout: () => void;
 }
 
 export default function AdminSidebar({
@@ -28,7 +27,6 @@ export default function AdminSidebar({
   onNavigate,
   mobileMenuOpen,
   onCloseMobileMenu,
-  onLogout,
 }: AdminSidebarProps) {
   const { profile } = useAuth();
   const workspace = useWorkspace();
@@ -198,20 +196,6 @@ export default function AdminSidebar({
               <span>{workspace.startups.items.length} dossiers</span>
             </div>
           </div>
-
-          <button
-            id="sidebar-nav-logout"
-            onClick={onLogout}
-            className="group flex w-full cursor-pointer items-center justify-between rounded-xl px-3 py-2.5 text-left text-slate-300 transition-all hover:bg-rose-500/10 hover:text-rose-300"
-          >
-            <span className="flex items-center gap-2.5">
-              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#0f2c45] text-slate-300 group-hover:bg-rose-950/60 group-hover:text-rose-300">
-                <LogOut className="h-3.5 w-3.5" />
-              </span>
-              <span className="text-[13px] font-medium">Log out</span>
-            </span>
-            <ChevronRight className="h-4 w-4 text-slate-500 group-hover:text-rose-300" />
-          </button>
 
           <p className="flex items-center justify-center gap-1 text-[10px] text-slate-500">
             {mobileMenuOpen ? (

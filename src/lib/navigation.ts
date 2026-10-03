@@ -327,7 +327,6 @@ export const PAGE_LABELS: Record<NavPageId, string> = (() => {
   }
   labels["article-editor"] = "Article editor";
   labels["startup-dossier"] = "Startup dossier";
-  labels.logout = "Log out";
   return labels;
 })();
 

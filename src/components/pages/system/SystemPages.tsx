@@ -718,8 +718,8 @@ export function SettingsPage() {
                 <p className="text-xs font-bold text-[#071A2B]">Provider</p>
                 <p className="text-[11px] text-slate-500">
                   {isSupabaseConfigured
-                    ? "Supabase Auth — password plus one-time code."
-                    : "No provider configured — local demo sign-in for this build."}
+                    ? "Supabase Auth — an existing session is used when present."
+                    : "No provider configured — local workspace for this build."}
                 </p>
               </div>
               <Badge tone={isSupabaseConfigured ? "mint" : "amber"}>
@@ -732,8 +732,8 @@ export function SettingsPage() {
                 console never sees or stores them.
               </li>
               <li className="flex items-center gap-2">
-                <BadgeCheck className="h-3.5 w-3.5" /> Admin routes render only for an authenticated
-                profile; unauthenticated visitors get the sign-in screen.
+                <BadgeCheck className="h-3.5 w-3.5" /> There is no sign-in page — the console opens
+                directly as the local administrator.
               </li>
               <li className="flex items-center gap-2">
                 <ShieldCheck className="h-3.5 w-3.5" /> Role checks run through{" "}
