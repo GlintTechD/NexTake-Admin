@@ -72,6 +72,9 @@ function authErrorMessage(message: string): string {
 
 function dbErrorMessage(message: string): string {
   const text = message.toLowerCase();
+  if (text.includes("schema cache") && (text.includes("content_type") || text.includes("video_url"))) {
+    return "Video publishing is not enabled in the database yet. Apply supabase/migrations/20261006_youtube_media_fields.sql, then retry.";
+  }
   if (text.includes("violates row-level security")) {
     return "You do not have permission to change this record.";
   }
