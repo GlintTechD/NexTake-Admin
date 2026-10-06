@@ -151,7 +151,7 @@ export function aggregateAnalytics(
     0
   );
 
-  const topStories: TopStory[] = articles
+  const topStories: TopStory[] = current.length === 0 ? [] : articles
     .map((article) => {
       const articleEvents = current.filter(
         (event) => event.entityType === "article" && event.entityId === article.id

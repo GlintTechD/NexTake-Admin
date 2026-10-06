@@ -1,81 +1,27 @@
-import { ArrowUp, ShieldCheck, Terminal } from "lucide-react";
+import { ShieldCheck } from "lucide-react";
 import { useAuth } from "../lib/auth/context";
-import type { NavPageId } from "../types";
 import NexTakeLogo from "./NexTakeLogo";
 
 interface AdminFooterProps {
-  onNavigate: (page: NavPageId) => void;
 }
 
-export default function AdminFooter({ onNavigate }: AdminFooterProps) {
+export default function AdminFooter(_props: AdminFooterProps) {
   const { profile } = useAuth();
-
-  const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  };
 
   return (
     <footer id="admin-footer" className="bg-[#071A2B] text-slate-300 border-t border-[#0f2c45] py-10 transition-colors">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-center pb-8 border-b border-[#0f2c45]">
+        <div className="pb-8 border-b border-[#0f2c45]">
           
           {/* Brand & Mission */}
           <div className="space-y-2">
             <div className="flex items-center gap-2.5">
               <NexTakeLogo size="sm" />
-              <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded bg-[#7FFFD4]/15 text-[#7FFFD4] border border-[#7FFFD4]/30">
-                v2.4-admin
-              </span>
             </div>
             <p className="text-xs text-slate-400 max-w-sm leading-relaxed">
               Centralized administrative workspace for content publishing, real-time website configuration, and traffic telemetry.
             </p>
-          </div>
-
-          {/* Quick Shortcuts */}
-          <div className="flex flex-wrap items-center justify-start md:justify-center gap-x-6 gap-y-2 text-xs font-medium text-slate-400">
-            <button
-              onClick={() => onNavigate('home')}
-              className="hover:text-[#7FFFD4] transition-colors cursor-pointer"
-            >
-              Dashboard
-            </button>
-            <button
-              onClick={() => onNavigate('website')}
-              className="hover:text-[#7FFFD4] transition-colors cursor-pointer"
-            >
-              Website Editor
-            </button>
-            <button
-              onClick={() => onNavigate('blog')}
-              className="hover:text-[#7FFFD4] transition-colors cursor-pointer"
-            >
-              Articles
-            </button>
-            <span className="text-slate-600">•</span>
-            <div className="inline-flex items-center gap-1.5 text-[#7FFFD4] font-mono text-[11px]">
-              <Terminal className="w-3.5 h-3.5" />
-              <span>NexTake Engine v2.4</span>
-            </div>
-          </div>
-
-          {/* Status & Back to Top */}
-          <div className="flex items-center justify-start md:justify-end gap-4">
-            <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-[#0d263d] border border-[#163857] text-[11px] text-slate-300">
-              <span className="w-2 h-2 rounded-full bg-[#7FFFD4] animate-pulse" />
-              <span>All Systems Operational</span>
-            </div>
-
-            <button
-              id="admin-footer-scroll-top"
-              onClick={scrollToTop}
-              className="inline-flex items-center gap-1 text-xs text-slate-400 hover:text-white px-2.5 py-1.5 rounded-lg bg-[#0d263d] hover:bg-[#163857] transition-colors cursor-pointer"
-              aria-label="Back to top"
-            >
-              <span>Top</span>
-              <ArrowUp className="w-3.5 h-3.5 text-[#7FFFD4]" />
-            </button>
           </div>
 
         </div>

@@ -141,11 +141,6 @@ function PostCard({ post }: { post: Post }) {
           {post.excerpt}
         </p>
         <div className="mt-3 flex items-center gap-3">
-          <img
-            src={post.avatar}
-            alt={post.author}
-            className="h-10 w-10 rounded-full object-cover"
-          />
           <div className="text-sm">
             <div className="font-medium text-slate-900">{post.author}</div>
             <div className="text-slate-500">{post.date}</div>

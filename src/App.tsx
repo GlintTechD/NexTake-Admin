@@ -73,6 +73,8 @@ function mapArticleRow(article: ArticleRow): Article {
     image: article.image,
     isNew: article.is_new,
     isBigStory: article.status === "published" && !!article.is_new,
+    createdAt: article.created_at,
+    publishedAt: article.published_at ?? (article.status === "published" ? article.created_at : null),
   };
 }
 
@@ -465,10 +467,7 @@ useEffect(() => {
         read_time: newArticleData.readTime,
         avatar: newArticleData.avatar,
         image: newArticleData.image,
-        is_new:
-          newArticleData.status === "published"
-            ? !!newArticleData.isBigStory
-            : false,
+        is_new: newArticleData.status === "published",
       })
       .select()
       .single();
@@ -491,9 +490,17 @@ useEffect(() => {
     const newArticle =
       mapArticleRow(data);
 
+    if (newArticle.status === "published") {
+      await supabase.from("articles").update({ is_new: false }).neq("id", newArticle.id).eq("is_new", true);
+    }
+
     setArticles((prev) => [
       newArticle,
-      ...prev,
+      ...prev.map((article) =>
+        newArticle.status === "published"
+          ? { ...article, isNew: false, isBigStory: false }
+          : article
+      ),
     ]);
 
     setActivities((prev) => [
@@ -545,13 +552,22 @@ useEffect(() => {
       return;
     }
 
+    if (updatedArticle.status === "published" && updatedArticle.isBigStory) {
+      await supabase.from("articles").update({ is_new: false }).neq("id", updatedArticle.id).eq("is_new", true);
+    }
+
     setArticles((prev) =>
-      prev.map((article) =>
-        article.id ===
-        updatedArticle.id
-          ? updatedArticle
-          : article,
-      ),
+      prev.map((article) => {
+        if (article.id === updatedArticle.id) {
+          return {
+            ...updatedArticle,
+            publishedAt: updatedArticle.publishedAt ?? new Date().toISOString(),
+          };
+        }
+        return updatedArticle.status === "published" && updatedArticle.isBigStory
+          ? { ...article, isNew: false, isBigStory: false }
+          : article;
+      }),
     );
 
     setActivities((prev) => [
@@ -1105,7 +1121,7 @@ useEffect(() => {
 
       {/* FOOTER */}
       <div className="lg:pl-64 bg-[#071A2B]">
-        <AdminFooter onNavigate={(page) => goToPage(page)} />
+        <AdminFooter />
       </div>
 
       {/* LIVE WEBSITE MODAL */}
@@ -1114,6 +1130,7 @@ useEffect(() => {
         onClose={() => setIsLiveWebsiteOpen(false)}
         config={websiteConfig}
         articles={articles}
+        dailyTips={dailyTips}
       />
     </div>
   );

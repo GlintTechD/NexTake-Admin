@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { 
+import {
   Save, 
   CheckCircle2, 
   RotateCcw, 
@@ -28,6 +28,12 @@ import {
   TIP_DEFAULT_CATEGORIES,
   useCustomCategories,
 } from "../../lib/customCategories";
+import {
+  compareNewest,
+  compareNewestTips,
+  isCurrentBigStory,
+  isCurrentDailyTip,
+} from "../../lib/publishing/rotation";
 
 const POST_CATEGORY_OPTIONS = [
   "Software Engineering",
@@ -327,7 +333,21 @@ const handleSaveDailyTip = (e: React.FormEvent) => {
 
       return matchesSearch && matchesCategory;
     });
-  }, [articles, articleSearchQuery, selectedCategoryFilter]);
+  }, [articles, articleSearchQuery, selectedCategoryFilter])
+    .sort((left, right) => {
+      const leftCurrent = isCurrentBigStory(left) ? 1 : 0;
+      const rightCurrent = isCurrentBigStory(right) ? 1 : 0;
+      return rightCurrent - leftCurrent || compareNewest(left, right);
+    });
+
+  const orderedDailyTips = useMemo(
+    () => [...dailyTips].sort((left, right) => {
+      const leftCurrent = isCurrentDailyTip(left) ? 1 : 0;
+      const rightCurrent = isCurrentDailyTip(right) ? 1 : 0;
+      return rightCurrent - leftCurrent || compareNewestTips(left, right);
+    }),
+    [dailyTips]
+  );
 
   const categories = useMemo(() => {
     const unique = Array.from(new Set(articles.map(a => a.category)));
@@ -430,7 +450,7 @@ const handleSaveDailyTip = (e: React.FormEvent) => {
               </span>
             </div>
             <p className="text-xs text-slate-500">
-              Check all posts made to the main blog website. <strong className="text-[#071A2B]">Click any box below to edit the live post</strong> immediately.
+              New published stories take the first position. The current big story rotates out after 24 hours but remains available in Explore.
             </p>
           </div>
 
@@ -495,7 +515,9 @@ const handleSaveDailyTip = (e: React.FormEvent) => {
                     ? 'bg-[#071A2B] text-[#7FFFD4]'
                     : 'bg-amber-100 text-amber-900 border border-amber-300'
                 }`}>
-                  {art.status === 'published' ? 'LIVE' : 'DRAFT'}
+                  {art.status === 'published'
+                    ? (isCurrentBigStory(art) ? 'LIVE · #1' : 'EXPLORE')
+                    : 'DRAFT'}
                 </span>
 
                 {/* Hover Quick Edit Badge */}
@@ -583,7 +605,7 @@ const handleSaveDailyTip = (e: React.FormEvent) => {
         {/* Daily Tips Grid */}
         {dailyTips.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
-            {dailyTips.map((tip) => (
+            {orderedDailyTips.map((tip) => (
               <div
                 key={tip.id}
                 className="group relative flex flex-col rounded-xl border border-[#071A2B]/15 bg-white hover:border-[#071A2B] hover:shadow-md transition-all overflow-hidden"
@@ -615,7 +637,9 @@ const handleSaveDailyTip = (e: React.FormEvent) => {
                         : "bg-amber-100 text-amber-900 border border-amber-300"
                     }`}
                   >
-                    {tip.status === "published" ? "LIVE" : "DRAFT"}
+                    {tip.status === "published"
+                      ? (isCurrentDailyTip(tip) ? "LIVE · #1" : "EXPLORE")
+                      : "DRAFT"}
                   </span>
                 </div>
 
