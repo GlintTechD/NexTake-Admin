@@ -159,7 +159,9 @@ export function articleInputToRow(
     image_credit: input.imageCredit,
     read_time: input.readTime,
 
-    canonical_url: input.canonicalUrl,
+    // canonical_url is retained in the shared client model, but is not part
+    // of the deployed articles table. Do not send unsupported columns through
+    // PostgREST or Supabase rejects otherwise valid article/video saves.
     syndication_license: input.syndicationLicense,
     syndicated_body: input.syndicatedBody,
 
