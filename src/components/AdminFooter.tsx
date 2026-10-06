@@ -2,10 +2,7 @@ import { ShieldCheck } from "lucide-react";
 import { useAuth } from "../lib/auth/context";
 import NexTakeLogo from "./NexTakeLogo";
 
-interface AdminFooterProps {
-}
-
-export default function AdminFooter(_props: AdminFooterProps) {
+export default function AdminFooter() {
   const { profile } = useAuth();
 
   return (

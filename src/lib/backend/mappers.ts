@@ -107,6 +107,8 @@ export function mapArticleRow(row: Row): Article {
     syndicatedBody: nullableStr(row.syndicated_body) ?? nullableStr(row.content),
 
     status: asStatus(row.status),
+    contentType: str(row.content_type) === "media" || str(row.video_url) ? "media" : "article",
+    videoUrl: nullableStr(row.video_url),
     publishedAt: nullableStr(row.published_at),
     isBigStory: num(row.hero_priority) > 0,
     inDailyEdit: bool(row.in_daily_edit),
@@ -162,6 +164,8 @@ export function articleInputToRow(
     syndicated_body: input.syndicatedBody,
 
     related_company_ids: input.relatedCompanyIds,
+    content_type: input.contentType ?? "article",
+    video_url: input.videoUrl ?? null,
 
     /* Legacy columns kept in sync so an older public blog build keeps working. */
     excerpt: input.summary,

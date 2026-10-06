@@ -110,6 +110,9 @@ export interface Article {
   createdAt?: string;
   updatedAt?: string;
   updatedBy?: string | null;
+  /** Existing article rows can remain unchanged; media rows use these fields. */
+  contentType?: "article" | "media";
+  videoUrl?: string | null;
 }
 
 export type PublishStatus = 'draft' | 'published' | 'scheduled';
@@ -144,6 +147,8 @@ export interface ArticleInput {
   syndicationLicense: SyndicationLicense | null;
   syndicatedBody: string | null;
   relatedCompanyIds: string[];
+  contentType?: "article" | "media";
+  videoUrl?: string | null;
 }
 
 export interface AdminProfile {

@@ -41,6 +41,8 @@ import { Modal, ConfirmDialog } from "../../ui/overlay";
 import type { Column } from "../../ui/data";
 import { Field, TextInput } from "../../ui/form";
 import ArticlePreviewModal from "./ArticlePreviewModal";
+import YouTubeVideoPublisher from "./YouTubeVideoPublisher";
+import { sortPublishedMedia } from "../../../lib/publishing/youtube";
 
 const PAGE_SIZE = 12;
 
@@ -135,6 +137,10 @@ export default function ArticlesWorkspace({
         .toLowerCase();
       return haystack.includes(query);
     });
+
+    if (typeLock && (sortKey === "updated" || sortKey === "created")) {
+      return sortPublishedMedia(filtered);
+    }
 
     return filtered.sort((a, b) => {
       switch (sortKey) {
@@ -366,6 +372,8 @@ export default function ArticlesWorkspace({
   return (
     <div className="space-y-6">
       {flash && <Notice tone="success">{flash}</Notice>}
+
+      {canCreate && typeLock && <YouTubeVideoPublisher placement={typeLock} />}
 
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <SegmentedControl

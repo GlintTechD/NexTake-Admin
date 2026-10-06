@@ -6,6 +6,7 @@ import { Badge, StatusBadge } from "../../ui/primitives";
 import { Modal } from "../../ui/overlay";
 import { DefinitionList } from "../../ui/layout";
 import { editorialStateLabel } from "../../../lib/workspace/articleAdapter";
+import { parseYouTubeUrl } from "../../../lib/publishing/youtube";
 
 /**
  * Editor-facing preview of a story, using the same renderer the console uses
@@ -47,6 +48,7 @@ export default function ArticlePreviewModal({
           <StatusBadge status={editorialStateLabel(article)} />
           <Badge tone="mint">{article.category}</Badge>
           <Badge tone="neutral">{article.type ?? "article"}</Badge>
+          {article.contentType === "media" && <Badge tone="violet">video</Badge>}
           <span className="text-[11px] text-slate-500">{article.date}</span>
         </div>
 
@@ -68,13 +70,22 @@ export default function ArticlePreviewModal({
           </div>
         </div>
 
-        {article.image && (
+        {article.videoUrl && parseYouTubeUrl(article.videoUrl) ? (
+          <div className="aspect-video overflow-hidden rounded-2xl border border-[#071A2B]/10 bg-black">
+            <iframe
+              title={`${article.title} video`}
+              src={parseYouTubeUrl(article.videoUrl)?.embedUrl}
+              className="h-full w-full border-0"
+              allowFullScreen
+            />
+          </div>
+        ) : article.image ? (
           <img
             src={article.image}
             alt={article.title}
             className="w-full rounded-2xl border border-[#071A2B]/10 object-cover"
           />
-        )}
+        ) : null}
 
         <div
           className="text-sm text-[#071A2B]"

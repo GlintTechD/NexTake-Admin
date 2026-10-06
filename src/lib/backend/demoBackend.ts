@@ -307,11 +307,13 @@ export const demoBackend: Backend = {
               (!article.publishedAt ||
                 new Date(article.publishedAt).getTime() <= now)
           )
-          .sort(
-            (a, b) =>
-              new Date(b.publishedAt ?? b.createdAt ?? "").getTime() -
-              new Date(a.publishedAt ?? a.createdAt ?? "").getTime()
-          )
+          .sort((a, b) => {
+            const published =
+              new Date(b.publishedAt ?? 0).getTime() -
+              new Date(a.publishedAt ?? 0).getTime();
+            return published ||
+              new Date(b.createdAt ?? 0).getTime() - new Date(a.createdAt ?? 0).getTime();
+          })
       );
     },
 

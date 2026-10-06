@@ -308,7 +308,8 @@ export const supabaseBackend: Backend = {
         .select("*")
         .eq("status", "published")
         .lte("published_at", new Date().toISOString())
-        .order("published_at", { ascending: false });
+        .order("published_at", { ascending: false })
+        .order("created_at", { ascending: false });
 
       if (error) return fail(dbErrorMessage(error.message));
       return ok((data ?? []).map(mapArticleRow));

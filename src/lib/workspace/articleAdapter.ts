@@ -110,6 +110,8 @@ export function rowToArticle(row: Row): Article {
     slug: str(row.slug) || slugifyTitle(str(row.title)),
     tags: strArray(row.tags),
     type: (str(row.type) || "article") as Article["type"],
+    contentType: str(row.content_type) === "media" || str(row.video_url) ? "media" : "article",
+    videoUrl: str(row.video_url) || null,
     reviewState: (str(row.review_state) || undefined) as Article["reviewState"],
     publishedAt: row.published_at ? str(row.published_at) : null,
     createdAt: str(row.created_at) || undefined,
@@ -154,6 +156,8 @@ export function articleToRow(article: Article): Row {
     meta_description: article.seo?.metaDescription ?? "",
     og_image_url: article.seo?.ogImageUrl ?? "",
     type: article.type ?? "article",
+    content_type: article.contentType ?? "article",
+    video_url: article.videoUrl ?? null,
     review_state: article.reviewState ?? "draft",
     tags: article.tags ?? [],
     related_startup_ids: article.relatedStartupIds ?? [],
@@ -392,6 +396,8 @@ export function articleToInput(article: Article): ArticleInput {
     syndicationLicense: article.syndicationLicense ?? null,
     syndicatedBody: article.syndicatedBody ?? article.content,
     relatedCompanyIds: article.relatedCompanyIds ?? [],
+    contentType: article.contentType ?? "article",
+    videoUrl: article.videoUrl ?? null,
   };
 }
 
