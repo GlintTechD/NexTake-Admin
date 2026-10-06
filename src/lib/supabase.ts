@@ -30,6 +30,7 @@ export interface ArticleRow {
   image: string;
   is_new?: boolean;
   created_at: string;
+  published_at?: string | null;
   hero_priority?: number | null;
 }
 
@@ -48,6 +49,7 @@ export interface ArticleInsert {
   image: string;
   is_new?: boolean;
   created_at?: string;
+  published_at?: string | null;
 }
 
 export interface DailyTipRow {

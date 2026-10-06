@@ -72,8 +72,10 @@ export function AnalyticsPage() {
   }, [period]);
 
   const events = useMemo(() => {
-    const remote = serverEvents?.events;
-    return remote && remote.length > 0 ? remote : workspace.engagement.items;
+    if (serverEvents !== null) return serverEvents.events ?? [];
+    return workspace.engagement.items.filter(
+      (event) => event.origin === "live" && event.meta.origin !== "sample"
+    );
   }, [serverEvents, workspace.engagement.items]);
 
   const snapshot = useMemo(
@@ -86,7 +88,7 @@ export function AnalyticsPage() {
   );
 
   const maxDaily = Math.max(1, ...snapshot.series.map((point) => point.views));
-  const liveEvents = events.filter((event) => event.origin === "live").length;
+  const liveEvents = events.length;
 
   if (!allowed) {
     return (
@@ -124,7 +126,7 @@ export function AnalyticsPage() {
         <Notice tone={liveEvents > 0 ? "success" : "info"} title="Source of these numbers">
           {liveEvents > 0
             ? `${liveEvents.toLocaleString()} events were captured by this console or reported back through the tracker.`
-            : "These events come from the shipped sample workspace, not from visitors. They are marked as sample data so the reporting layout can be reviewed before launch."}
+            : "No public-site events have been collected for this window yet. The dashboard will show only verified public tracker data; it will not substitute sample figures."}
           {serverNote ? ` ${serverNote}` : ""}
         </Notice>
       )}

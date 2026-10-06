@@ -382,11 +382,6 @@ export default function BlogManager({
             {/* Author, Stats & Action Buttons */}
             <div className="flex items-center justify-between gap-3 border-t border-[#071A2B]/10 px-5 pb-5 pt-3 text-xs text-slate-500">
               <div className="flex items-center gap-2">
-                <img
-                  src={article.avatar}
-                  alt={article.author}
-                  className="h-6 w-6 rounded-full border border-[#071A2B]/20 object-cover"
-                />
                 <div className="flex flex-col">
                   <span className="text-[11px] font-semibold leading-none text-[#071A2B]">
                     {article.author}
