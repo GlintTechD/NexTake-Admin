@@ -48,10 +48,16 @@ export function slugifyTitle(title: string): string {
 
 /** Fill every optional editorial field so the UI can rely on them. */
 export function normalizeArticle(article: Article): Article {
-  const type = article.type ?? "article";
+  const mediaPlacement = article.mediaPlacement ?? (
+    article.type === "short" || article.type === "interview" || article.type === "video"
+      ? article.type
+      : null
+  );
+  const type = mediaPlacement ?? article.type ?? "article";
   return {
     ...article,
     type,
+    mediaPlacement,
     reviewState:
       article.reviewState ??
       (article.status === "published"
@@ -110,6 +116,7 @@ export function rowToArticle(row: Row): Article {
     slug: str(row.slug) || slugifyTitle(str(row.title)),
     tags: strArray(row.tags),
     type: (str(row.type) || "article") as Article["type"],
+    mediaPlacement: (str(row.media_placement) || null) as Article["mediaPlacement"],
     contentType: str(row.content_type) === "media" || str(row.video_url) ? "media" : "article",
     videoUrl: str(row.video_url) || null,
     reviewState: (str(row.review_state) || undefined) as Article["reviewState"],
@@ -157,6 +164,7 @@ export function articleToRow(article: Article): Row {
     og_image_url: article.seo?.ogImageUrl ?? "",
     type: article.type ?? "article",
     content_type: article.contentType ?? "article",
+    media_placement: article.mediaPlacement ?? null,
     video_url: article.videoUrl ?? null,
     review_state: article.reviewState ?? "draft",
     tags: article.tags ?? [],
@@ -397,6 +405,7 @@ export function articleToInput(article: Article): ArticleInput {
     syndicatedBody: article.syndicatedBody ?? article.content,
     relatedCompanyIds: article.relatedCompanyIds ?? [],
     contentType: article.contentType ?? "article",
+    mediaPlacement: article.mediaPlacement ?? null,
     videoUrl: article.videoUrl ?? null,
   };
 }
@@ -407,7 +416,9 @@ export function applyInputToArticle(article: Article, input: ArticleInput): Arti
     title: input.title,
     excerpt: input.summary,
     category: input.category,
+    type: input.mediaPlacement ?? article.type,
     status: input.status,
+    mediaPlacement: input.mediaPlacement,
     publishedAt: input.publishedAt,
     isBigStory: (input.heroPriority ?? 0) > 0,
     inDailyEdit: input.inDailyEdit,

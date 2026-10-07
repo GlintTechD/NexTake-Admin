@@ -31,6 +31,7 @@ export interface ArticleRow {
   is_new?: boolean;
   created_at: string;
   published_at?: string | null;
+  media_placement?: "short" | "interview" | "video" | null;
   hero_priority?: number | null;
 }
 
@@ -50,6 +51,7 @@ export interface ArticleInsert {
   is_new?: boolean;
   created_at?: string;
   published_at?: string | null;
+  media_placement?: "short" | "interview" | "video" | null;
 }
 
 export interface DailyTipRow {

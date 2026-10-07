@@ -62,8 +62,8 @@ export interface Article {
   isNew?: boolean;
 
   /* --- Editorial workflow (Operations brief §8–§11) ---------------------- */
-  /** Article | interview | short. Video is handled by a separate system. */
-  type?: 'article' | 'interview' | 'short';
+  /** Placement/type used by the editorial workspace. */
+  type?: 'article' | 'interview' | 'short' | 'video';
   /** Reviewer-facing state layered on top of `status`. */
   reviewState?: 'draft' | 'in_review' | 'changes_requested' | 'approved';
   reviewerId?: string | null;
@@ -112,10 +112,12 @@ export interface Article {
   updatedBy?: string | null;
   /** Existing article rows can remain unchanged; media rows use these fields. */
   contentType?: "article" | "media";
+  mediaPlacement?: MediaPlacement | null;
   videoUrl?: string | null;
 }
 
 export type PublishStatus = 'draft' | 'published' | 'scheduled';
+export type MediaPlacement = 'short' | 'interview' | 'video';
 export type LinkBehavior = 'reader' | 'external';
 export type SyndicationLicense =
   | 'fair_use_summary'
@@ -148,6 +150,7 @@ export interface ArticleInput {
   syndicatedBody: string | null;
   relatedCompanyIds: string[];
   contentType?: "article" | "media";
+  mediaPlacement?: MediaPlacement | null;
   videoUrl?: string | null;
 }
 

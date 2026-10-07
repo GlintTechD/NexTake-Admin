@@ -1,7 +1,7 @@
 import type { Article } from "../../types";
 
 export type YouTubeUrlKind = "watch" | "shorts" | "live";
-export type VideoPlacement = "interview" | "short";
+export type VideoPlacement = "interview" | "short" | "video";
 
 export interface YouTubeVideoReference {
   originalUrl: string;
@@ -36,7 +36,7 @@ export function buildPublishedVideoArticle(input: {
 
   return {
     id: `media-${Date.now().toString(36)}`,
-    category: input.category?.trim() || (input.placement === "interview" ? "Interviews" : "Shorts"),
+    category: input.category?.trim() || (input.placement === "interview" ? "Interviews" : input.placement === "short" ? "Shorts" : "Videos"),
     title,
     excerpt: description,
     content: description,
@@ -44,12 +44,13 @@ export function buildPublishedVideoArticle(input: {
     date: new Date(now).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }),
     status: "published",
     views: 0,
-    readTime: input.placement === "short" ? "Short video" : "Video interview",
+    readTime: input.placement === "short" ? "Short video" : input.placement === "interview" ? "Video interview" : "Video",
     avatar: "",
     image: thumbnail,
     coverImageUrl: thumbnail,
     type: input.placement,
     contentType: "media",
+    mediaPlacement: input.placement,
     videoUrl: input.reference.originalUrl,
     tags: [input.placement],
     publishedAt: now,

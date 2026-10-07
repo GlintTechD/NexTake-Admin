@@ -3,6 +3,7 @@ import type {
   ArticleInput,
   Company,
   LinkBehavior,
+  MediaPlacement,
   PublishStatus,
   SiteSettings,
   SyndicationLicense,
@@ -64,6 +65,11 @@ const asLicense = (value: unknown): SyndicationLicense | null => {
     : null;
 };
 
+const asMediaPlacement = (value: unknown): MediaPlacement | null => {
+  const text = str(value);
+  return text === "short" || text === "interview" || text === "video" ? text : null;
+};
+
 /**
  * Maps a database row onto the shared article model.
  *
@@ -75,6 +81,7 @@ const asLicense = (value: unknown): SyndicationLicense | null => {
 export function mapArticleRow(row: Row): Article {
   const title = str(row.title);
   const createdAt = str(row.created_at) || new Date().toISOString();
+  const mediaPlacement = asMediaPlacement(row.media_placement);
 
   return {
     id: str(row.id),
@@ -107,7 +114,9 @@ export function mapArticleRow(row: Row): Article {
     syndicatedBody: nullableStr(row.syndicated_body) ?? nullableStr(row.content),
 
     status: asStatus(row.status),
+    type: mediaPlacement ?? "article",
     contentType: str(row.content_type) === "media" || str(row.video_url) ? "media" : "article",
+    mediaPlacement,
     videoUrl: nullableStr(row.video_url),
     publishedAt: nullableStr(row.published_at),
     isBigStory: num(row.hero_priority) > 0,
@@ -167,6 +176,7 @@ export function articleInputToRow(
 
     related_company_ids: input.relatedCompanyIds,
     content_type: input.contentType ?? "article",
+    media_placement: input.mediaPlacement ?? null,
     video_url: input.videoUrl ?? null,
 
     /* Legacy columns kept in sync so an older public blog build keeps working. */

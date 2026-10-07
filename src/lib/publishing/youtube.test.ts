@@ -5,6 +5,8 @@ import {
   parseYouTubeUrl,
   sortPublishedMedia,
 } from "./youtube";
+import { articleToInput } from "../workspace/articleAdapter";
+import { articleInputToRow, mapArticleRow } from "../backend/mappers";
 
 describe("YouTube publishing helpers", () => {
   it.each([
@@ -63,12 +65,25 @@ describe("YouTube publishing helpers", () => {
     expect(article).toMatchObject({
       contentType: "media",
       type: "short",
+      mediaPlacement: "short",
       videoUrl: "https://www.youtube.com/shorts/dQw4w9WgXcQ",
       tags: ["short"],
       coverImageUrl: "thumb",
       status: "published",
       publishedAt: "2026-10-06T10:00:00.000Z",
     });
+  });
+
+  it("preserves media placement through the database row mapping", () => {
+    const article = buildPublishedVideoArticle({
+      reference: parseYouTubeUrl("https://youtu.be/dQw4w9WgXcQ")!,
+      placement: "interview",
+      author: "Editor",
+    });
+    const row = articleInputToRow(articleToInput(article), "editor");
+
+    expect(row.media_placement).toBe("interview");
+    expect(mapArticleRow({ ...row, id: article.id, created_at: article.createdAt }).mediaPlacement).toBe("interview");
   });
 
   it("orders published media by publishedAt then createdAt descending", () => {
