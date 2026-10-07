@@ -34,8 +34,13 @@ export function buildPublishedVideoArticle(input: {
     input.description?.trim() || input.metadata?.description || "Published video from YouTube.";
   const thumbnail = input.metadata?.thumbnailUrl || input.reference.thumbnailUrl;
 
+  const generatedId =
+    typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+      ? crypto.randomUUID()
+      : undefined;
+
   return {
-    id: `media-${Date.now().toString(36)}`,
+    id: generatedId as string,
     category: input.category?.trim() || (input.placement === "interview" ? "Interviews" : input.placement === "short" ? "Shorts" : "Videos"),
     title,
     excerpt: description,

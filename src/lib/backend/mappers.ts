@@ -144,49 +144,69 @@ export function articleInputToRow(
   input: ArticleInput,
   actor: string
 ): Record<string, unknown> {
-  return {
+  const authorName = input.originalAuthor?.trim() || actor?.trim() || "NexTake Editorial";
+  const now = new Date();
+  const dateFormatted = input.originalPublishedAt
+    ? new Date(input.originalPublishedAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })
+    : now.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+  const summaryText = input.summary?.trim() || input.title?.trim() || "Brief summary";
+  const bodyText = input.syndicatedBody?.trim() || input.summary?.trim() || input.title?.trim() || "Article content";
+  const publishedAt =
+    input.status === "published"
+      ? (input.publishedAt || now.toISOString())
+      : (input.publishedAt ?? null);
+
+  const row: Record<string, unknown> = {
     slug: input.slug,
     title: input.title,
-    summary: input.summary,
-    category: input.category,
+    summary: summaryText,
+    category: input.category || "General",
     status: input.status,
-    published_at: input.publishedAt,
+    published_at: publishedAt,
     hero_priority: input.heroPriority,
     in_daily_edit: input.inDailyEdit,
     is_breaking: input.isBreaking,
 
-    source_url: input.sourceUrl,
-    source_name: input.sourceName,
+    source_url: input.sourceUrl || "",
+    source_name: input.sourceName || "",
     source_logo_url: input.sourceLogoUrl,
-    original_author: input.originalAuthor,
+    original_author: authorName,
     original_published_at: input.originalPublishedAt,
     link_behavior: input.linkBehavior,
 
-    key_takeaways: input.keyTakeaways,
-    tags: input.tags,
-    cover_image_url: input.coverImageUrl,
+    key_takeaways: input.keyTakeaways ?? [],
+    tags: input.tags ?? [],
+    cover_image_url: input.coverImageUrl || "",
     image_credit: input.imageCredit,
-    read_time: input.readTime,
+    read_time: input.readTime || "5 min read",
 
     // canonical_url is retained in the shared client model, but is not part
     // of the deployed articles table. Do not send unsupported columns through
     // PostgREST or Supabase rejects otherwise valid article/video saves.
     syndication_license: input.syndicationLicense,
-    syndicated_body: input.syndicatedBody,
+    syndicated_body: bodyText,
 
-    related_company_ids: input.relatedCompanyIds,
+    related_company_ids: input.relatedCompanyIds ?? [],
     content_type: input.contentType ?? "article",
     media_placement: input.mediaPlacement ?? null,
     video_url: input.videoUrl ?? null,
 
     /* Legacy columns kept in sync so an older public blog build keeps working. */
-    excerpt: input.summary,
-    content: input.syndicatedBody,
-    image: input.coverImageUrl,
+    author: authorName,
+    date: dateFormatted,
+    excerpt: summaryText,
+    content: bodyText,
+    image: input.coverImageUrl || "",
     is_new: input.isBreaking,
 
     updated_by: actor,
   };
+
+  if (input.id) {
+    row.id = input.id;
+  }
+
+  return row;
 }
 
 export function mapCompanyRow(row: Row): Company {

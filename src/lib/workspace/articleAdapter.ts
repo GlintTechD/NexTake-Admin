@@ -378,8 +378,12 @@ export function seedArticles(): Article[] {
  */
 export function articleToInput(article: Article): ArticleInput {
   const slug = article.seo?.slug || article.slug || slugifyTitle(article.title);
+  const isValidUuid =
+    typeof article.id === "string" &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(article.id);
 
   return {
+    id: isValidUuid ? article.id : undefined,
     slug,
     title: article.title,
     summary: article.excerpt,

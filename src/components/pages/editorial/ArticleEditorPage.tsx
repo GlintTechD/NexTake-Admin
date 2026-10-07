@@ -57,8 +57,13 @@ import ArticlePreviewModal from "./ArticlePreviewModal";
 const DEFAULT_AVATAR = "https://i.pravatar.cc/64?img=60";
 
 function blankArticle(author: string): Article {
+  const generatedId =
+    typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+      ? crypto.randomUUID()
+      : `art-${Date.now().toString(36)}`;
+
   return normalizeArticle({
-    id: `art-${Date.now().toString(36)}`,
+    id: generatedId,
     title: "",
     excerpt: "",
     content: "",
@@ -291,7 +296,7 @@ export default function ArticleEditorPage({
 
       <Tabs
         active={tab}
-        onChange={setTab}
+        onChange={(id) => setTab(id as typeof tab)}
         tabs={[
           { id: "content", label: "Content" },
           {

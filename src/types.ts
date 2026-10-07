@@ -125,6 +125,7 @@ export type SyndicationLicense =
   | 'press_release';
 
 export interface ArticleInput {
+  id?: string;
   slug: string;
   title: string;
   summary: string;

@@ -479,6 +479,17 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
             ? await backend.articles.update(normalized.id, input, actor)
             : await backend.articles.create(input, actor);
           if (result.error) return { ok: false, error: result.error };
+          if (result.data) {
+            const savedArticle = normalizeArticle(result.data);
+            const synced = articlesRef.current.map((entry) =>
+              entry.id === normalized.id || entry.id === savedArticle.id ? savedArticle : entry
+            );
+            if (!synced.some((entry) => entry.id === savedArticle.id)) {
+              synced.unshift(savedArticle);
+            }
+            setArticles(synced);
+            persistLocalArticles(synced);
+          }
         }
 
         logAction({
@@ -559,11 +570,15 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         const target = find(id);
         if (!target) return;
 
+        const effectivePublishedAt =
+          status === "published"
+            ? (publishedAt || target.publishedAt || new Date().toISOString())
+            : (publishedAt === undefined ? target.publishedAt ?? null : publishedAt);
+
         const updated = normalizeArticle({
           ...target,
           status,
-          publishedAt:
-            publishedAt === undefined ? target.publishedAt ?? null : publishedAt,
+          publishedAt: effectivePublishedAt,
           reviewState:
             status === "published"
               ? "approved"
