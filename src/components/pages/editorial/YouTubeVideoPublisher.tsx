@@ -50,7 +50,7 @@ export default function YouTubeVideoPublisher({
     };
   }, [reference]);
 
-  const publish = () => {
+  const publish = async () => {
     setError(null);
     setSuccess(null);
     if (!reference) {
@@ -69,8 +69,14 @@ export default function YouTubeVideoPublisher({
     }));
 
     setPublishing(true);
-    workspace.articles.create(article);
+    const result = await workspace.articles.save(article);
     setPublishing(false);
+
+    if (!result.ok) {
+      setError(result.error ?? "Failed to publish video.");
+      return;
+    }
+
     setSuccess(`${placement === "interview" ? "Interview" : "Short"} published successfully.`);
     setUrl("");
     setMetadata(null);

@@ -250,13 +250,26 @@ Video production and distribution belong to NexTake's **separate video system**.
 
 ## 9. Applying the migration
 
+The SQL files in `supabase/migrations` must be applied in filename order. The
+public-read policy migration depends on the intelligence tables from
+`20261003`, and video publishing depends on the article columns from `20261006`.
+Apply each file once, in this order:
+
 ```bash
-# review first — the files are additive and idempotent
-supabase db push
-# or run them directly
+# Use a direct PostgreSQL connection string with migration privileges.
+# VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY are browser credentials and
+# cannot apply schema changes. Do not commit or share DATABASE_URL.
 psql "$DATABASE_URL" -f supabase/migrations/20261003_nextake_intelligence.sql
 psql "$DATABASE_URL" -f supabase/migrations/20261004_super_admin_signup.sql
+psql "$DATABASE_URL" -f supabase/migrations/20261006_youtube_media_fields.sql
+psql "$DATABASE_URL" -f supabase/migrations/20261007_public_intelligence_read.sql
+psql "$DATABASE_URL" -f supabase/migrations/20261008_media_placement.sql
 ```
+
+`DATABASE_URL` must be set in the shell running `psql`; putting it in a `.env`
+file does not automatically export it to the shell. Alternatively, use a
+Supabase CLI installation after initializing and linking this project. Review
+the files before applying them to production.
 
 The second file enables the one-time super administrator sign-up described under
 *Authentication → Super administrator sign-up*. It adds the existence probe, the

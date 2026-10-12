@@ -444,6 +444,7 @@ export default function ArticlesWorkspace({
                 { value: "article", label: "Articles" },
                 { value: "interview", label: "Interviews" },
                 { value: "short", label: "Shorts" },
+                { value: "video", label: "Videos" },
               ]}
             />
           )}

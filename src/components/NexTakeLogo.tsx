@@ -14,7 +14,7 @@ export default function NexTakeLogo({
     md: "h-10 sm:h-12",
     lg: "h-14 sm:h-16",
     xl: "h-16 sm:h-20",
-    header: "h-10 sm:h-16 lg:h-20",
+    header: "h-7 sm:h-8",
   };
 
   const maxWidthClasses = {
@@ -22,7 +22,7 @@ export default function NexTakeLogo({
     md: "max-w-[260px] sm:max-w-[300px]",
     lg: "max-w-[320px] sm:max-w-[380px]",
     xl: "max-w-[400px] sm:max-w-[480px]",
-    header: "max-w-[320px] sm:max-w-[420px] lg:max-w-[520px]",
+    header: "max-w-[180px] sm:max-w-[220px]",
   };
 
   return (

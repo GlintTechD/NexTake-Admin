@@ -30,6 +30,25 @@
 -- Shared helpers
 -- ---------------------------------------------------------------------------
 
+-- The console's auth adapter and the later super-admin migration both depend
+-- on this profile row being attached to a Supabase Auth user.
+create table if not exists public.admin_profiles (
+  id         uuid primary key references auth.users(id) on delete cascade,
+  email      text not null default '',
+  full_name  text,
+  role       text not null default 'editor' check (role in ('admin', 'editor')),
+  avatar_url text
+);
+
+alter table public.admin_profiles enable row level security;
+drop policy if exists admin_profiles_read_own on public.admin_profiles;
+create policy admin_profiles_read_own
+  on public.admin_profiles
+  for select
+  to authenticated
+  using (id = auth.uid());
+grant select on public.admin_profiles to authenticated;
+
 -- Timestamps are updated by trigger so the console and any direct SQL writes
 -- agree on `updated_at`.
 create or replace function public.nextake_touch_updated_at()
@@ -134,7 +153,7 @@ create table if not exists public.people (
   startup_ids    jsonb not null default '[]'::jsonb,
   location       text not null default '',
   biography      text not null default '',
-  current_role   text not null default '',
+  "current_role" text not null default '',
   photo_url      text not null default '',
   links          jsonb not null default '{}'::jsonb,
   article_ids    jsonb not null default '[]'::jsonb,
