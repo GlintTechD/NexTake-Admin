@@ -6,7 +6,7 @@
  */
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { CornerDownLeft, FileText, Search } from "lucide-react";
+import { CornerDownLeft, FileText, Search, X } from "lucide-react";
 import { useWorkspace } from "../../lib/workspace/context";
 import {
   buildEntityIndex,
@@ -24,7 +24,9 @@ export default function GlobalSearch({
   const workspace = useWorkspace();
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
+  const [mobileExpanded, setMobileExpanded] = useState(false);
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
 
   const index = useMemo(
     () =>
@@ -55,7 +57,10 @@ export default function GlobalSearch({
 
   useEffect(() => {
     const onClick = (event: MouseEvent) => {
-      if (!containerRef.current?.contains(event.target as Node)) setOpen(false);
+      if (!containerRef.current?.contains(event.target as Node)) {
+        setOpen(false);
+        setMobileExpanded(false);
+      }
     };
     document.addEventListener("mousedown", onClick);
     return () => document.removeEventListener("mousedown", onClick);
@@ -86,14 +91,55 @@ export default function GlobalSearch({
         break;
     }
     setOpen(false);
+    setMobileExpanded(false);
     setQuery("");
   };
 
   return (
-    <div ref={containerRef} className="relative hidden w-full max-w-md md:block">
-      <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+    <div ref={containerRef} className="relative flex items-center">
+      {/* Mobile and Tablet: compact icon-only trigger */}
+      <button
+        type="button"
+        id="admin-search-toggle-btn"
+        onClick={() => {
+          setMobileExpanded((prev) => {
+            const next = !prev;
+            if (next) {
+              setOpen(true);
+              setTimeout(() => inputRef.current?.focus(), 50);
+            } else {
+              setOpen(false);
+            }
+            return next;
+          });
+        }}
+        className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-xl border border-[#0f2c45] bg-[#0d263d] text-slate-300 transition-colors hover:border-[#7FFFD4]/40 hover:text-white lg:hidden"
+        aria-label="Search"
+      >
+        <Search className="h-4 w-4" />
+      </button>
+
+      {/* Backdrop for mobile/tablet popup */}
+      {mobileExpanded && (
+        <div
+          onClick={() => {
+            setMobileExpanded(false);
+            setOpen(false);
+          }}
+          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-xs lg:hidden"
+        />
+      )}
+
+      {/* Search icons inside input */}
+      <Search className="pointer-events-none absolute left-3 top-1/2 hidden h-3.5 w-3.5 -translate-y-1/2 text-slate-400 lg:block" />
+      {mobileExpanded && (
+        <Search className="pointer-events-none fixed left-7 top-6 z-50 h-4 w-4 text-slate-400 lg:hidden" />
+      )}
+
+      {/* Global search input */}
       <input
         id="admin-global-search"
+        ref={inputRef}
         value={query}
         onFocus={() => setOpen(true)}
         onChange={(event) => {
@@ -104,15 +150,42 @@ export default function GlobalSearch({
           if (event.key === "Enter" && results[0]) openNode(results[0]);
           if (event.key === "Escape") {
             setOpen(false);
+            setMobileExpanded(false);
             setQuery("");
           }
         }}
         placeholder="Search articles, startups, people, sources…"
-        className="w-full rounded-xl border border-[#0f2c45] bg-[#0d263d] py-2 pl-9 pr-3 text-xs text-white placeholder:text-slate-400 focus:border-[#7FFFD4]/60 focus:outline-none focus:ring-2 focus:ring-[#7FFFD4]/20"
+        className={`rounded-xl border border-[#0f2c45] bg-[#0d263d] text-xs text-white placeholder:text-slate-400 focus:border-[#7FFFD4]/60 focus:outline-none focus:ring-2 focus:ring-[#7FFFD4]/20 transition-all ${
+          mobileExpanded
+            ? "fixed left-4 right-4 top-3.5 z-50 h-10 pl-9 pr-10 shadow-2xl lg:static lg:h-auto lg:w-64 xl:w-80 2xl:w-96 lg:py-2 lg:pl-9 lg:pr-3"
+            : "hidden lg:block lg:w-64 xl:w-80 2xl:w-96 lg:py-2 lg:pl-9 lg:pr-3"
+        }`}
       />
 
+      {/* Mobile close button */}
+      {mobileExpanded && (
+        <button
+          type="button"
+          onClick={() => {
+            setMobileExpanded(false);
+            setOpen(false);
+          }}
+          className="fixed right-6 top-5 z-50 flex h-6 w-6 cursor-pointer items-center justify-center text-slate-400 hover:text-white lg:hidden"
+          aria-label="Close search"
+        >
+          <X className="h-4 w-4" />
+        </button>
+      )}
+
+      {/* Search results dropdown */}
       {open && query.trim().length > 0 && (
-        <div className="absolute left-0 right-0 top-full z-50 mt-2 max-h-96 overflow-y-auto rounded-2xl border border-[#071A2B]/15 bg-white p-2 shadow-2xl">
+        <div
+          className={`z-50 max-h-96 overflow-y-auto rounded-2xl border border-[#071A2B]/15 bg-white p-2 shadow-2xl ${
+            mobileExpanded
+              ? "fixed left-4 right-4 top-16 lg:absolute lg:left-0 lg:right-0 lg:top-full lg:mt-2 lg:w-full"
+              : "absolute left-0 right-0 top-full mt-2 w-full"
+          }`}
+        >
           {results.length === 0 && (
             <p className="px-3 py-6 text-center text-xs text-slate-500">
               Nothing matches “{query}”.

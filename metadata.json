@@ -1,6 +1,8 @@
 {
-  "name": "NexTake",
+  "name": "Remix NexTake-Admin ",
   "description": "NexTake - Admin website and content management portal with live site overview, metrics, and blog management.",
   "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
 }
