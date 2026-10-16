@@ -22,7 +22,6 @@ import {
   Newspaper,
   Plus,
   Share2,
-  Sparkles,
   TrendingUp,
 } from "lucide-react";
 import { useWorkspace } from "../../lib/workspace/context";
@@ -152,7 +151,6 @@ export default function DashboardPage({
       {/* QUICK ACTIONS */}
       <Card className="p-5">
         <div className="flex items-center gap-2">
-          <Sparkles className="h-4 w-4 text-[#7FFFD4]" />
           <h2 className="text-sm font-bold text-[#071A2B]">Quick actions</h2>
         </div>
         <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
