@@ -1,7 +1,6 @@
 import { 
   Plus, 
   Globe, 
-  TrendingUp, 
   Eye, 
   Activity,
   Layers,
@@ -14,6 +13,7 @@ interface DashboardHomeProps {
   articles: Article[];
   metrics: SystemMetric[];
   activities: ActivityItem[];
+  articleDataStatus: "loading" | "error" | "demo" | "connected";
   onNavigate: (page: NavPageId) => void;
   onOpenNewArticleModal: () => void;
 }
@@ -22,12 +22,18 @@ export default function DashboardHome({
   articles,
   metrics,
   activities,
+  articleDataStatus,
   onNavigate,
   onOpenNewArticleModal,
 }: DashboardHomeProps) {
   const publishedCount = articles.filter(a => a.status === 'published').length;
   const draftCount = articles.filter(a => a.status === 'draft').length;
-  const totalViews = articles.reduce((sum, a) => sum + a.views, 0);
+  const contentSummary = {
+    loading: "Loading article records from Supabase.",
+    error: "Article records are unavailable because the Supabase query failed.",
+    demo: "Local demo data is shown; changes here do not sync to the public website.",
+    connected: `The shared articles table contains ${draftCount} drafts and ${publishedCount} published articles.`,
+  }[articleDataStatus];
 
   return (
     <div id="dashboard-home-page" className="space-y-8 bg-white text-[#071A2B]">
@@ -45,7 +51,7 @@ export default function DashboardHome({
               Welcome back, <span className="text-[#7FFFD4]">Admin</span>
             </h1>
             <p className="text-sm text-slate-300 leading-relaxed">
-              Your website and technical blog are running smoothly. You have <strong className="text-white font-semibold">{draftCount} pending drafts</strong> and <strong className="text-white font-semibold">{publishedCount} live articles</strong> reaching over {totalViews.toLocaleString()} readers.
+              {contentSummary}
             </p>
           </div>
 
@@ -83,7 +89,6 @@ export default function DashboardHome({
                 {metric.label}
               </span>
               <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-[#7FFFD4]/20 text-[#071A2B] border border-[#7FFFD4]/40">
-                <TrendingUp className="w-3 h-3 text-[#071A2B]" />
                 {metric.change}
               </span>
             </div>
@@ -97,14 +102,14 @@ export default function DashboardHome({
             {/* Progress indicator with Aquamarine accent */}
             <div className="space-y-1 pt-1">
               <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
-                <div 
+                {metric.progressPercent !== null && <div 
                   className="bg-[#7FFFD4] h-full rounded-full"
                   style={{ width: `${metric.progressPercent}%` }}
-                />
+                />}
               </div>
               <div className="flex items-center justify-between text-[11px] text-slate-500">
                 <span className="font-mono text-[#071A2B]">{metric.technicalDetail}</span>
-                <span className="font-semibold text-[#071A2B]">{metric.progressPercent}%</span>
+                {metric.progressPercent !== null && <span className="font-semibold text-[#071A2B]">{metric.progressPercent}%</span>}
               </div>
             </div>
           </div>
@@ -209,7 +214,11 @@ export default function DashboardHome({
               <span>Write a new blog post</span>
             </button>
             <span className="text-xs text-slate-400 font-mono">
-              Auto-synced with Git repository
+              {articleDataStatus === "connected"
+                ? "Source: shared Supabase articles table"
+                : articleDataStatus === "demo"
+                  ? "Local demo data; not synced"
+                  : "Article source status shown above"}
             </span>
           </div>
         </section>

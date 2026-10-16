@@ -244,7 +244,7 @@ export interface SystemMetric {
   change: string;
   positive: boolean;
   technicalDetail: string;
-  progressPercent: number;
+  progressPercent: number | null;
 }
 export interface DailyTip {
   id: string;

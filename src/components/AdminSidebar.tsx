@@ -7,7 +7,7 @@
  */
 
 import { useMemo, useState } from "react";
-import { ChevronDown, ChevronRight, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { ChevronDown, ChevronRight, PanelLeftClose, PanelLeftOpen, Zap } from "lucide-react";
 import { NAV_GROUPS, type AdminRoute } from "../lib/navigation";
 import { can } from "../lib/permissions";
 import { useAuth } from "../lib/auth/context";
@@ -20,6 +20,8 @@ interface AdminSidebarProps {
   onNavigate: (route: AdminRoute) => void;
   mobileMenuOpen: boolean;
   onCloseMobileMenu: () => void;
+  articleCount: number;
+  articleDataStatus: "loading" | "error" | "demo" | "connected";
 }
 
 export default function AdminSidebar({
@@ -27,10 +29,25 @@ export default function AdminSidebar({
   onNavigate,
   mobileMenuOpen,
   onCloseMobileMenu,
+  articleCount,
+  articleDataStatus,
 }: AdminSidebarProps) {
   const { profile } = useAuth();
   const workspace = useWorkspace();
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+
+  const sourceStatusLabel = {
+    loading: "Checking",
+    error: "Query failed",
+    demo: "Demo only",
+    connected: "Connected",
+  }[articleDataStatus];
+
+  const sourceStatusColor = articleDataStatus === "connected"
+    ? "text-[#7FFFD4]"
+    : articleDataStatus === "error"
+      ? "text-rose-300"
+      : "text-amber-300";
 
   const counts = useMemo(() => {
     const articles = workspace.articles.items;
@@ -181,6 +198,24 @@ export default function AdminSidebar({
               </div>
             );
           })}
+
+          <div className="p-3.5 rounded-xl bg-[#092238] border border-[#10314d] space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-semibold uppercase text-slate-400 flex items-center gap-1">
+                <Zap className="w-3 h-3 text-[#7FFFD4]" />
+                Article Source
+              </span>
+              <span className={`text-[10px] font-mono font-medium ${sourceStatusColor}`}>
+                {sourceStatusLabel}
+              </span>
+            </div>
+            <div className="flex items-center justify-between text-[11px] text-slate-400 pt-0.5">
+              <span>Published articles</span>
+              <span className="text-white font-medium">
+                {articleDataStatus === "connected" ? articleCount : "--"}
+              </span>
+            </div>
+          </div>
         </div>
 
         <div className="space-y-3 border-t border-[#0f2c45] p-4">

@@ -11,6 +11,8 @@ const isConfigured = Boolean(
     supabaseUrl.startsWith("http")
 );
 
+export const isSupabaseConfigured = isConfigured;
+
 /* -------------------------------------------------------------------------- */
 /*                                   TYPES                                    */
 /* -------------------------------------------------------------------------- */

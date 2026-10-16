@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   supabase,
+  isSupabaseConfigured,
   type ArticleRow,
   type DailyTipRow,
 } from "./lib/supabase";
@@ -16,7 +17,6 @@ import type {
 
 import {
   INITIAL_WEBSITE_CONFIG,
-  SYSTEM_METRICS,
 } from "./data/initialData";
 
 import AdminHeader from "./components/AdminHeader";
@@ -140,6 +140,8 @@ export default function App() {
   const [isLoadingArticles, setIsLoadingArticles] =
     useState(true);
 
+  const [articleLoadFailed, setArticleLoadFailed] = useState(false);
+
   // =========================================================
   // DAILY TIPS
   // =========================================================
@@ -163,18 +165,6 @@ export default function App() {
 
   const [activities, setActivities] =
     useState<ActivityItem[]>([]);
-
-  // =========================================================
-  // DASHBOARD METRICS
-  // =========================================================
-
-  const [liveMetrics, setLiveMetrics] = useState({
-    visitors: 0,
-    subscribers: 0,
-    health: 99.98,
-    latency: 42,
-    publishedArticles: 0,
-  });
 
   useEffect(() => {
     // Track whether the endpoint exists; if it returns 404 (no backend), stop polling.
@@ -268,64 +258,56 @@ export default function App() {
 
     return () => window.clearInterval(timer);
   }, [articles]);
-
   const metrics: SystemMetric[] = useMemo(() => {
-    const publishedCount = Math.max(
-      liveMetrics.publishedArticles,
-      articles.filter((article) => article.status === 'published').length,
-    );
+    const publishedCount = articles.filter((article) => article.status === 'published').length;
+    const articleValue = !isSupabaseConfigured
+      ? 'Demo only'
+      : isLoadingArticles
+        ? 'Loading'
+        : articleLoadFailed
+          ? 'Unavailable'
+          : String(publishedCount);
+    const articleSource = !isSupabaseConfigured
+      ? 'Local data; not synced to the website'
+      : articleLoadFailed
+        ? 'Supabase article query failed'
+        : 'Source: shared Supabase articles table';
 
-    const compactNumber = new Intl.NumberFormat('en-US', {
-      notation: 'compact',
-      maximumFractionDigits: 1,
-    });
-
-    const formattedVisitors = compactNumber.format(liveMetrics.visitors || 0);
-    const formattedSubscribers = new Intl.NumberFormat('en-US').format(liveMetrics.subscribers || 0);
-
-    return SYSTEM_METRICS.map((metric) => {
-      if (metric.label === 'Total Published Articles') {
-        return {
-          ...metric,
-          value: String(publishedCount),
-          change: 'Live from site data',
-          progressPercent: Math.min(100, Math.max(35, publishedCount * 12)),
-        };
-      }
-
-      if (metric.label === 'Monthly Site Visitors') {
-        return {
-          ...metric,
-          value: formattedVisitors,
-          change: 'Measured from live page traffic',
-          progressPercent: Math.min(100, Math.max(35, Math.round((liveMetrics.visitors / 50000) * 100))),
-          technicalDetail: `${liveMetrics.visitors.toLocaleString()} tracked visits`,
-        };
-      }
-
-      if (metric.label === 'Newsletter Subscribers') {
-        return {
-          ...metric,
-          value: formattedSubscribers,
-          change: 'Live from subscription signups',
-          progressPercent: Math.min(100, Math.max(25, Math.round((liveMetrics.subscribers / 5000) * 100))),
-          technicalDetail: `${liveMetrics.subscribers.toLocaleString()} active subscribers`,
-        };
-      }
-
-      if (metric.label === 'Live System Health') {
-        return {
-          ...metric,
-          value: `${liveMetrics.health.toFixed(2)}%`,
-          change: `Latency ${liveMetrics.latency}ms`,
-          progressPercent: Math.min(100, Math.max(96, Math.round(liveMetrics.health))),
-          technicalDetail: `Edge latency ${liveMetrics.latency}ms`,
-        };
-      }
-
-      return metric;
-    });
-  }, [articles, liveMetrics]);
+    return [
+      {
+        label: 'Total Published Articles',
+        value: articleValue,
+        change: isSupabaseConfigured ? 'Supabase' : 'Demo data',
+        positive: true,
+        technicalDetail: articleSource,
+        progressPercent: null,
+      },
+      {
+        label: 'Site Visitors',
+        value: 'Not tracked',
+        change: 'Unavailable',
+        positive: false,
+        technicalDetail: 'No verified traffic source is connected',
+        progressPercent: null,
+      },
+      {
+        label: 'Newsletter Subscribers',
+        value: 'Not tracked',
+        change: 'Unavailable',
+        positive: false,
+        technicalDetail: 'No persisted subscriber count is connected',
+        progressPercent: null,
+      },
+      {
+        label: 'System Health',
+        value: 'Not measured',
+        change: 'Unavailable',
+        positive: false,
+        technicalDetail: 'No verified health monitoring source is connected',
+        progressPercent: null,
+      },
+    ];
+  }, [articleLoadFailed, articles, isLoadingArticles]);
 
   // =========================================================
   // LOAD DAILY TIPS
@@ -384,9 +366,12 @@ useEffect(() => {
           error,
         );
 
+        setArticleLoadFailed(true);
         setIsLoadingArticles(false);
         return;
       }
+
+      setArticleLoadFailed(false);
 
       const formattedArticles: Article[] = (
         data ?? []
@@ -1124,6 +1109,16 @@ useEffect(() => {
           onNavigate={handleNavigate}
           mobileMenuOpen={mobileMenuOpen}
           onCloseMobileMenu={() => setMobileMenuOpen(false)}
+          articleCount={articles.length}
+          articleDataStatus={
+            !isSupabaseConfigured
+              ? "demo"
+              : articleLoadFailed
+                ? "error"
+                : isLoadingArticles
+                  ? "loading"
+                  : "connected"
+          }
         />
 
         {/* CONTENT */}
