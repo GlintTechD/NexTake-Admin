@@ -20,6 +20,7 @@ interface Req {
   method?: string;
   url?: string;
   headers: Record<string, Header>;
+  query?: Record<string, Header>;
   body?: unknown;
 }
 
@@ -98,7 +99,13 @@ export default async function handler(req: Req, res: Res) {
   res.setHeader("Cache-Control", "no-store");
 
   const url = new URL(req.url ?? "/", "http://local");
-  const path = url.pathname.replace(/^\/api\/nie/, "") || "/";
+  const routePath =
+    first(req.query?.path) ||
+    url.searchParams.get("path") ||
+    url.pathname.replace(/^\/api\/nie(?:-handler)?\/?/, "");
+  const path = routePath ? `/${routePath.replace(/^\/+/, "")}` : "/";
+  const query = new URLSearchParams(url.searchParams);
+  query.delete("path");
   const method = (req.method ?? "GET").toUpperCase();
 
   const route = ROUTES.find((r) => r.method === method && r.pattern.test(path));
@@ -125,7 +132,7 @@ export default async function handler(req: Req, res: Res) {
 
     const hasBody = method !== "GET" && req.body !== undefined && req.body !== null && req.body !== "";
     const upstream = await timedFetch(
-      `${nieUrl}${path}${url.search}`,
+      `${nieUrl}${path}${query.toString() ? `?${query.toString()}` : ""}`,
       {
         method,
         headers: {
