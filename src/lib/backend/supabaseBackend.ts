@@ -151,6 +151,22 @@ export const supabaseBackend: Backend = {
       return ok(null);
     },
 
+    async signInWithPasswordOnly(email, password): Promise<BackendResult<AdminProfile>> {
+      const client = requireClient();
+      const { data, error } = await client.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+      });
+
+      if (error) return fail(authErrorMessage(error.message));
+      const profile = data.user ? await loadAdminProfile(data.user.id) : null;
+      if (!profile) {
+        await client.auth.signOut();
+        return fail("This account is not registered as a NexTake administrator.");
+      }
+      return ok(profile);
+    },
+
     /** Step 2 — email a time-limited one-time code / secure link. */
     async sendVerificationCode(
       email

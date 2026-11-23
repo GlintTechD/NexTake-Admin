@@ -15,6 +15,8 @@ export type NavPageId =
   | 'blog'
   | 'articles'
   | 'article-editor'
+  | 'nie-review'
+  | 'nie-article'
   | 'interviews'
   | 'shorts'
   | 'sources'

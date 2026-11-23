@@ -14,6 +14,7 @@ import {
   Activity,
   BadgeCheck,
   BarChart3,
+  Bot,
   Building2,
   CalendarDays,
   Camera,
@@ -101,6 +102,14 @@ export const NAV_GROUPS: NavGroup[] = [
         icon: FileText,
         permission: "articles.view",
         path: "editorial/articles",
+      },
+      {
+        id: "nie-review",
+        label: "AI newsroom",
+        description: "Review engine-written drafts",
+        icon: Bot,
+        permission: "articles.review",
+        path: "editorial/newsroom",
       },
       {
         id: "interviews",
@@ -317,6 +326,7 @@ export const NAV_GROUPS: NavGroup[] = [
 /** Pages reachable from other pages (not shown in the sidebar navigation). */
 export const SECONDARY_ROUTES: Partial<Record<NavPageId, string>> = {
   "article-editor": "editorial/articles/edit",
+  "nie-article": "editorial/newsroom/article",
   "startup-dossier": "intelligence/startups/dossier",
 };
 
@@ -326,6 +336,7 @@ export const PAGE_LABELS: Record<NavPageId, string> = (() => {
     for (const item of group.items) labels[item.id] = item.label;
   }
   labels["article-editor"] = "Article editor";
+  labels["nie-article"] = "Newsroom draft";
   labels["startup-dossier"] = "Startup dossier";
   return labels;
 })();
@@ -351,6 +362,8 @@ export function toHash(route: AdminRoute): string {
   const path =
     route.page === "article-editor" && route.params.articleId
       ? `editorial/articles/${route.params.articleId}/edit`
+      : route.page === "nie-article" && route.params.articleId
+      ? `editorial/newsroom/${route.params.articleId}`
       : route.page === "startup-dossier" && route.params.startupId
       ? `intelligence/startups/${route.params.startupId}`
       : itemForPage(route.page)?.path ?? route.page;
@@ -371,6 +384,11 @@ interface RoutePattern {
 }
 
 const ROUTE_PATTERNS: RoutePattern[] = [
+  {
+    page: "nie-article",
+    pattern: /^editorial\/newsroom\/(\d+)$/,
+    params: (match) => ({ articleId: match[1] }),
+  },
   {
     page: "article-editor",
     pattern: /^editorial\/articles\/([^/]+)\/edit$/,

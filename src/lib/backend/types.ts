@@ -53,6 +53,11 @@ export interface Backend {
       email: string,
       password: string
     ): Promise<BackendResult<null>>;
+    /** Signs in with a persisted Supabase session for the configured password-only newsroom account. */
+    signInWithPasswordOnly(
+      email: string,
+      password: string
+    ): Promise<BackendResult<AdminProfile>>;
     /** Step 2 — emails a time-limited code (or secure link) to the admin. */
     sendVerificationCode(
       email: string

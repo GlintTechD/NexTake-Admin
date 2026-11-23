@@ -191,6 +191,10 @@ export const demoBackend: Backend = {
       return ok(null);
     },
 
+    async signInWithPasswordOnly() {
+      return fail("Password-only newsroom sign-in requires the live Supabase backend.");
+    },
+
     async sendVerificationCode(email): Promise<BackendResult<VerificationDispatch>> {
       await delay(500);
       const code = String(Math.floor(100000 + Math.random() * 900000));

@@ -28,6 +28,8 @@ import BlogManager from "./components/pages/BlogManager";
 import ArticlesWorkspace from "./components/pages/editorial/ArticlesWorkspace";
 import ArticleEditorPage from "./components/pages/editorial/ArticleEditorPage";
 import SourcesPage from "./components/pages/editorial/SourcesPage";
+import NieReviewPage from "./components/pages/nie/NieReviewPage";
+import NieArticlePage from "./components/pages/nie/NieArticlePage";
 import MediaLibraryPage from "./components/pages/editorial/MediaLibraryPage";
 import StartupsPage from "./components/pages/intelligence/StartupsPage";
 import StartupDossierPage from "./components/pages/intelligence/StartupDossierPage";
@@ -202,62 +204,6 @@ export default function App() {
     return () => window.clearInterval(timer);
   }, [articles]);
 
-  useEffect(() => {
-    // Track whether the endpoint exists; if it returns 404 (no backend), stop polling.
-    let endpointAvailable = true;
-
-    const fetchLiveMetrics = async () => {
-      if (!endpointAvailable) return;
-      try {
-        const response = await fetch('/api/public/metrics');
-        // 404 = no backend server (static Vercel deploy) — fall back to local stats silently.
-        if (response.status === 404) {
-          endpointAvailable = false;
-          const publishedCount = articles.filter((article) => article.status === 'published').length;
-          const articleViews = articles
-            .filter((article) => article.status === 'published')
-            .reduce((sum, article) => sum + article.views, 0);
-          setLiveMetrics({
-            visitors: Math.max(articleViews, publishedCount * 300),
-            subscribers: 0,
-            health: 99.98,
-            latency: 42,
-            publishedArticles: publishedCount,
-          });
-          return;
-        }
-        if (!response.ok) throw new Error('Metrics request failed');
-
-        const payload = await response.json();
-        setLiveMetrics({
-          visitors: Number(payload.monthlyVisitors ?? 0),
-          subscribers: Number(payload.newsletterSubscribers ?? 0),
-          health: Number(payload.systemHealth?.availability ?? 99.98),
-          latency: Number(payload.systemHealth?.latencyMs ?? 42),
-          publishedArticles: Number(payload.publishedArticles ?? 0),
-        });
-      } catch (error) {
-        console.error('Unable to fetch live metrics:', error);
-        const publishedCount = articles.filter((article) => article.status === 'published').length;
-        const articleViews = articles
-          .filter((article) => article.status === 'published')
-          .reduce((sum, article) => sum + article.views, 0);
-
-        setLiveMetrics({
-          visitors: Math.max(articleViews, publishedCount * 300),
-          subscribers: 0,
-          health: 99.98,
-          latency: 42,
-          publishedArticles: publishedCount,
-        });
-      }
-    };
-
-    fetchLiveMetrics();
-    const timer = window.setInterval(fetchLiveMetrics, 10000);
-
-    return () => window.clearInterval(timer);
-  }, [articles]);
   const metrics: SystemMetric[] = useMemo(() => {
     const publishedCount = articles.filter((article) => article.status === 'published').length;
     const articleValue = !isSupabaseConfigured
@@ -949,6 +895,28 @@ useEffect(() => {
             }
           />
         );
+
+      case "nie-review":
+        return (
+          <NieReviewPage
+            onOpenArticle={(id) =>
+              handleNavigate({ page: "nie-article", params: { articleId: String(id) } })
+            }
+          />
+        );
+
+      case "nie-article": {
+        const nieId = Number(route.params.articleId);
+        return Number.isInteger(nieId) && nieId > 0 ? (
+          <NieArticlePage articleId={nieId} onBack={() => goToPage("nie-review")} />
+        ) : (
+          <NieReviewPage
+            onOpenArticle={(id) =>
+              handleNavigate({ page: "nie-article", params: { articleId: String(id) } })
+            }
+          />
+        );
+      }
 
       case "sources":
         return <SourcesPage openSourceId={route.params.sourceId} />;
